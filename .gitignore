@@ -1,0 +1,5 @@
+/target
+/data
+*.log
+# Généré par tauri-build à chaque compilation
+/app/gen/

@@ -1,0 +1,9 @@
+[package]
+name = "fx-audio"
+description = "Son de clic de Clicksy (synthétisé, sans fichier externe)."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+windows.workspace = true

@@ -1,0 +1,12 @@
+[package]
+name = "fx-core"
+description = "Configuration, profils et état partagé de Clicksy (sans dépendance Win32)."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+fx-bus.workspace = true
+arc-swap.workspace = true
+serde.workspace = true
+serde_json.workspace = true

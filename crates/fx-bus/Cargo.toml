@@ -1,0 +1,10 @@
+[package]
+name = "fx-bus"
+description = "Bus d'événements interne de Clicksy (clic, touche, action...)."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+crossbeam-channel.workspace = true
+serde.workspace = true

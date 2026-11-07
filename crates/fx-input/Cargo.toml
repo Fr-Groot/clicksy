@@ -1,0 +1,11 @@
+[package]
+name = "fx-input"
+description = "Hooks bas niveau souris/clavier de Clicksy (WH_MOUSE_LL, WH_KEYBOARD_LL)."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+fx-bus.workspace = true
+fx-core.workspace = true
+windows.workspace = true

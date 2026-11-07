@@ -1,0 +1,327 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Clicksy – Réglages</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <aside class="sidebar">
+    <div class="brand">
+      <svg class="logo" viewBox="0 0 32 32" aria-hidden="true">
+        <circle cx="16" cy="16" r="11.5" fill="none" stroke="#FFC400" stroke-width="5"/>
+        <circle cx="16" cy="16" r="4.5" fill="#1E90FF"/>
+      </svg>
+      <span>Clicksy</span>
+    </div>
+    <nav>
+      <a href="#general" class="active">Général</a>
+      <a href="#spotlight">Spotlight</a>
+      <a href="#ring">Anneau</a>
+      <a href="#clicks">Clics</a>
+      <a href="#trail">Traînée &amp; laser</a>
+      <a href="#draw">Dessin</a>
+      <a href="#hotkeys">Raccourcis</a>
+      <a href="#record" class="soon">Enregistrement <em>bientôt</em></a>
+    </nav>
+    <div class="sidebar-foot">
+      <label class="switch big" title="Ctrl+Alt+Maj+A">
+        <input type="checkbox" data-path="enabled">
+        <span class="track"></span>
+        <span class="label" id="master-label">Effets activés</span>
+      </label>
+    </div>
+  </aside>
+
+  <main>
+    <section id="general" class="page active">
+      <h1>Général</h1>
+      <p class="lead">Les réglages s'appliquent tout de suite, à l'écran : bouge la souris pour voir le résultat.</p>
+
+      <div class="card">
+        <div class="row">
+          <div class="row-text"><strong>Effets activés</strong><span>Interrupteur général de tous les effets.</span></div>
+          <label class="switch"><input type="checkbox" data-path="enabled"><span class="track"></span></label>
+        </div>
+        <div class="row">
+          <div class="row-text"><strong>Bulle de confirmation</strong><span>Petit message en haut de l'écran quand tu utilises un raccourci (« Spotlight : cercle »…).</span></div>
+          <label class="switch"><input type="checkbox" data-path="show_banner"><span class="track"></span></label>
+        </div>
+      </div>
+
+      <h2>Données</h2>
+      <div class="card">
+        <div class="row">
+          <div class="row-text"><strong>Dossier de configuration</strong><span id="data-dir" class="mono">…</span></div>
+          <button class="btn" id="open-dir">Ouvrir</button>
+        </div>
+        <div class="row">
+          <div class="row-text"><strong>Revenir aux réglages d'origine</strong><span>Effets, couleurs et raccourcis par défaut.</span></div>
+          <button class="btn danger" id="reset">Réinitialiser</button>
+        </div>
+      </div>
+
+      <p class="note">Clicksy ne fait aucun appel réseau et n'envoie aucune donnée. Les touches tapées ne sont jamais enregistrées.</p>
+    </section>
+
+    <section id="spotlight" class="page">
+      <h1>Spotlight</h1>
+      <p class="lead">Assombrit l'écran sauf autour du curseur, pour guider le regard.</p>
+
+      <div class="card">
+        <div class="row stack">
+          <div class="row-text"><strong>Forme</strong><span>Raccourci : <kbd data-hk="cycle_spotlight"></kbd> pour passer de l'une à l'autre.</span></div>
+          <div class="segmented" data-path="spotlight.mode">
+            <button data-value="Off">Désactivé</button>
+            <button data-value="Circle">Cercle</button>
+            <button data-value="HBand">Bande horizontale</button>
+            <button data-value="VBand">Bande verticale</button>
+          </div>
+        </div>
+        <div class="row">
+          <div class="row-text"><strong>Taille du cercle</strong><span>Rayon, en pixels à 100 %.</span></div>
+          <div class="slider"><input type="range" min="40" max="600" step="5" data-path="spotlight.radius"><output></output></div>
+        </div>
+        <div class="row">
+          <div class="row-text"><strong>Largeur de la bande</strong><span>Hauteur (bande horizontale) ou largeur (verticale).</span></div>
+          <div class="slider"><input type="range" min="40" max="800" step="5" data-path="spotlight.band_size"><output></output></div>
+        </div>
+        <div class="row">
+          <div class="row-text"><strong>Assombrissement</strong><span>Opacité du voile sur le reste de l'écran.</span></div>
+          <div class="slider"><input type="range" min="0" max="1" step="0.01" data-path="spotlight.dim" data-percent><output></output></div>
+        </div>
+        <div class="row">
+          <div class="row-text"><strong>Douceur du bord</strong><span>0 = bord net.</span></div>
+          <div class="slider"><input type="range" min="0" max="150" step="1" data-path="spotlight.feather"><output></output></div>
+        </div>
+        <div class="row">
+          <div class="row-text"><strong>Couleur du voile</strong><span>Noir par défaut ; une couleur sombre de la charte du client fonctionne aussi.</span></div>
+          <input type="color" data-path="spotlight.dim_color">
+        </div>
+      </div>
+    </section>
+
+    <section id="ring" class="page">
+      <h1>Anneau</h1>
+      <p class="lead">Un cercle autour du curseur pour le repérer d'un coup d'œil, même en partage d'écran.</p>
+      <div class="card">
+        <div class="row">
+          <div class="row-text"><strong>Afficher l'anneau</strong><span>Raccourci : <kbd data-hk="toggle_ring"></kbd></span></div>
+          <label class="switch"><input type="checkbox" data-path="ring.enabled"><span class="track"></span></label>
+        </div>
+        <div class="row">
+          <div class="row-text"><strong>Couleur</strong></div>
+          <div class="swatches" data-for="ring.color"></div>
+          <input type="color" data-path="ring.color">
+        </div>
+        <div class="row">
+          <div class="row-text"><strong>Taille</strong><span>Rayon, en pixels à 100 %.</span></div>
+          <div class="slider"><input type="range" min="8" max="120" step="1" data-path="ring.radius"><output></output></div>
+        </div>
+        <div class="row">
+          <div class="row-text"><strong>Épaisseur</strong></div>
+          <div class="slider"><input type="range" min="1" max="24" step="0.5" data-path="ring.thickness"><output></output></div>
+        </div>
+        <div class="row">
+          <div class="row-text"><strong>Opacité</strong></div>
+          <div class="slider"><input type="range" min="0.1" max="1" step="0.01" data-path="ring.opacity" data-percent><output></output></div>
+        </div>
+        <div class="row">
+          <div class="row-text"><strong>Pulsation</strong><span>L'anneau « respire » doucement.</span></div>
+          <label class="switch"><input type="checkbox" data-path="ring.pulse"><span class="track"></span></label>
+        </div>
+        <div class="row">
+          <div class="row-text"><strong>Rythme de la pulsation</strong><span>Durée d'un cycle.</span></div>
+          <div class="slider"><input type="range" min="400" max="4000" step="100" data-path="ring.pulse_period_ms" data-unit="ms"><output></output></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="clicks" class="page">
+      <h1>Clics</h1>
+      <p class="lead">Une onde colorée à chaque clic : on voit tout de suite quel bouton a été pressé.</p>
+      <div class="card">
+        <div class="row">
+          <div class="row-text"><strong>Afficher les clics</strong><span>Raccourci : <kbd data-hk="toggle_clicks"></kbd></span></div>
+          <label class="switch"><input type="checkbox" data-path="clicks.enabled"><span class="track"></span></label>
+        </div>
+        <div class="row">
+          <div class="row-text"><strong>Couleurs</strong><span>Gauche, droit, milieu.</span></div>
+          <div class="colors3">
+            <label><input type="color" data-path="clicks.left_color"><span>Gauche</span></label>
+            <label><input type="color" data-path="clicks.right_color"><span>Droit</span></label>
+            <label><input type="color" data-path="clicks.middle_color"><span>Milieu</span></label>
+          </div>
+        </div>
+        <div class="row">
+          <div class="row-text"><strong>Taille de l'onde</strong></div>
+          <div class="slider"><input type="range" min="10" max="150" step="1" data-path="clicks.radius"><output></output></div>
+        </div>
+        <div class="row">
+          <div class="row-text"><strong>Épaisseur</strong></div>
+          <div class="slider"><input type="range" min="1" max="16" step="0.5" data-path="clicks.thickness"><output></output></div>
+        </div>
+        <div class="row">
+          <div class="row-text"><strong>Durée</strong></div>
+          <div class="slider"><input type="range" min="150" max="1500" step="10" data-path="clicks.duration_ms" data-unit="ms"><output></output></div>
+        </div>
+        <div class="row">
+          <div class="row-text"><strong>Pastille bouton maintenu</strong><span>Visible pendant un glisser-déposer.</span></div>
+          <label class="switch"><input type="checkbox" data-path="clicks.show_held"><span class="track"></span></label>
+        </div>
+      </div>
+      <h2>Son</h2>
+      <div class="card">
+        <div class="row">
+          <div class="row-text"><strong>Son de clic</strong><span>Utile en vidéo, quand le spectateur ne voit pas la souris.</span></div>
+          <label class="switch"><input type="checkbox" data-path="clicks.sound"><span class="track"></span></label>
+        </div>
+        <div class="row">
+          <div class="row-text"><strong>Volume</strong></div>
+          <div class="slider"><input type="range" min="0.1" max="1" step="0.1" data-path="clicks.sound_volume" data-percent><output></output></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="trail" class="page">
+      <h1>Traînée &amp; laser</h1>
+      <p class="lead">Une trace qui suit le curseur puis s'efface : le regard suit le mouvement sans effort.</p>
+      <div class="card">
+        <div class="row">
+          <div class="row-text"><strong>Traînée derrière le curseur</strong><span>Raccourci : <kbd data-hk="toggle_trail"></kbd></span></div>
+          <label class="switch"><input type="checkbox" data-path="trail.enabled"><span class="track"></span></label>
+        </div>
+        <div class="row">
+          <div class="row-text"><strong>Couleur</strong></div>
+          <div class="swatches" data-for="trail.color"></div>
+          <input type="color" data-path="trail.color">
+        </div>
+        <div class="row">
+          <div class="row-text"><strong>Longueur</strong><span>Durée avant que la trace disparaisse.</span></div>
+          <div class="slider"><input type="range" min="100" max="1500" step="50" data-path="trail.duration_ms" data-unit="ms"><output></output></div>
+        </div>
+        <div class="row">
+          <div class="row-text"><strong>Épaisseur</strong></div>
+          <div class="slider"><input type="range" min="1" max="24" step="0.5" data-path="trail.width"><output></output></div>
+        </div>
+      </div>
+
+      <h2>Pointeur laser</h2>
+      <div class="card">
+        <div class="row">
+          <div class="row-text"><strong>Activer le laser</strong><span>Raccourci : <kbd data-hk="toggle_laser"></kbd>. Remplace l'anneau par un point lumineux avec sa traînée, comme une télécommande de présentation.</span></div>
+        </div>
+        <div class="row">
+          <div class="row-text"><strong>Couleur</strong></div>
+          <div class="swatches" data-for="laser.color"></div>
+          <input type="color" data-path="laser.color">
+        </div>
+        <div class="row">
+          <div class="row-text"><strong>Taille du point</strong></div>
+          <div class="slider"><input type="range" min="3" max="20" step="0.5" data-path="laser.size"><output></output></div>
+        </div>
+        <div class="row">
+          <div class="row-text"><strong>Longueur de la traînée</strong></div>
+          <div class="slider"><input type="range" min="100" max="2000" step="50" data-path="laser.duration_ms" data-unit="ms"><output></output></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="draw" class="page">
+      <h1>Dessin</h1>
+      <p class="lead">Entoure, encadre ou fléche ce qui compte, directement sur l'écran, puis efface d'une touche.</p>
+      <div class="card help">
+        <div class="row">
+          <div class="row-text">
+            <strong>Mode d'emploi</strong>
+            <span><kbd data-hk="toggle_draw"></kbd> entre et sort du mode dessin. Pendant le dessin, les clics ne vont plus à l'application en dessous.</span>
+          </div>
+        </div>
+        <div class="row keys">
+          <div><kbd>P</kbd> stylo</div><div><kbd>R</kbd> cadre</div><div><kbd>E</kbd> rond</div><div><kbd>F</kbd> flèche</div>
+          <div><kbd>Clic droit</kbd> outil suivant</div>
+          <div><kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> couleurs</div><div><kbd>Molette</kbd> épaisseur</div>
+          <div><kbd>Maj</kbd> carré, cercle, flèche droite</div>
+          <div><kbd>Ctrl</kbd> + <kbd>Z</kbd> annuler</div><div><kbd>Échap</kbd> tout effacer, puis quitter</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="row">
+          <div class="row-text"><strong>Couleurs</strong><span>Touches 1, 2 et 3.</span></div>
+          <div class="colors3">
+            <label><input type="color" data-path="draw.colors.0"><span>1</span></label>
+            <label><input type="color" data-path="draw.colors.1"><span>2</span></label>
+            <label><input type="color" data-path="draw.colors.2"><span>3</span></label>
+          </div>
+        </div>
+        <div class="row">
+          <div class="row-text"><strong>Épaisseur du trait</strong><span>Au départ ; la molette la change pendant le dessin.</span></div>
+          <div class="slider"><input type="range" min="1" max="24" step="0.5" data-path="draw.width"><output></output></div>
+        </div>
+        <div class="row stack">
+          <div class="row-text"><strong>Outil au démarrage</strong></div>
+          <div class="segmented" data-path="draw.default_tool">
+            <button data-value="Pen">Stylo</button>
+            <button data-value="Rect">Cadre</button>
+            <button data-value="Ellipse">Rond</button>
+            <button data-value="Arrow">Flèche</button>
+          </div>
+        </div>
+        <div class="row">
+          <div class="row-text"><strong>Effacer en quittant le mode dessin</strong><span>Sinon, les dessins restent affichés jusqu'au prochain Échap.</span></div>
+          <label class="switch"><input type="checkbox" data-path="draw.clear_on_exit"><span class="track"></span></label>
+        </div>
+      </div>
+    </section>
+
+    <section id="hotkeys" class="page">
+      <h1>Raccourcis</h1>
+      <p class="lead">Clique dans un champ puis appuie sur la combinaison voulue. <kbd>Échap</kbd> annule, <kbd>Retour arrière</kbd> supprime le raccourci.</p>
+      <div class="card">
+        <div class="row">
+          <div class="row-text"><strong>Activer / désactiver tous les effets</strong></div>
+          <input class="hotkey" data-path="hotkeys.toggle_all" readonly>
+        </div>
+        <div class="row">
+          <div class="row-text"><strong>Changer de spotlight</strong></div>
+          <input class="hotkey" data-path="hotkeys.cycle_spotlight" readonly>
+        </div>
+        <div class="row">
+          <div class="row-text"><strong>Afficher / masquer l'anneau</strong></div>
+          <input class="hotkey" data-path="hotkeys.toggle_ring" readonly>
+        </div>
+        <div class="row">
+          <div class="row-text"><strong>Afficher / masquer les clics</strong></div>
+          <input class="hotkey" data-path="hotkeys.toggle_clicks" readonly>
+        </div>
+        <div class="row">
+          <div class="row-text"><strong>Traînée du curseur</strong></div>
+          <input class="hotkey" data-path="hotkeys.toggle_trail" readonly>
+        </div>
+        <div class="row">
+          <div class="row-text"><strong>Pointeur laser</strong></div>
+          <input class="hotkey" data-path="hotkeys.toggle_laser" readonly>
+        </div>
+        <div class="row">
+          <div class="row-text"><strong>Mode dessin</strong></div>
+          <input class="hotkey" data-path="hotkeys.toggle_draw" readonly>
+        </div>
+      </div>
+      <p class="warn" id="hk-warn" hidden></p>
+      <p class="note">Conseil : garde <kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>Maj</kbd>. Sur un clavier AZERTY, <kbd>Ctrl</kbd> + <kbd>Alt</kbd> seul équivaut à <kbd>AltGr</kbd> et peut bloquer des caractères comme @ ou #.</p>
+    </section>
+
+    <section id="record" class="page">
+      <h1>Enregistrement</h1>
+      <p class="lead">Capture de l'écran entier, d'une fenêtre ou d'une zone, avec le son du PC et le micro, puis un éditeur (zooms sur les clics, fond, découpe).</p>
+      <div class="card empty">
+        <p>En préparation : ce sera la prochaine grande étape de Clicksy.</p>
+      </div>
+    </section>
+  </main>
+
+  <div class="toast" id="toast" role="status" hidden></div>
+  <script src="app.js"></script>
+</body>
+</html>

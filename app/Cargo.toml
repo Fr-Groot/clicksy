@@ -1,0 +1,26 @@
+[package]
+name = "clicksy"
+description = "Clicksy : effets de pointeur pour formateurs (spotlight, anneau, clics...)."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "clicksy"
+path = "src/main.rs"
+
+[dependencies]
+fx-bus.workspace = true
+fx-core.workspace = true
+fx-input.workspace = true
+fx-overlay.workspace = true
+fx-audio.workspace = true
+crossbeam-channel.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+windows.workspace = true
+# Fenêtre de réglages. Fonctions par défaut, sans plugin réseau (pas de mise à jour auto, pas de HTTP).
+tauri = { version = "2.12", features = [] }
+
+[build-dependencies]
+tauri-build = { version = "2.7", features = [] }

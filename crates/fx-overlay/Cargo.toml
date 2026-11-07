@@ -1,0 +1,12 @@
+[package]
+name = "fx-overlay"
+description = "Fenêtres de surcouche par écran et rendu GPU (D3D11 + Direct2D + DirectComposition)."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+fx-bus.workspace = true
+fx-core.workspace = true
+windows.workspace = true
+windows-numerics = "0.3"
