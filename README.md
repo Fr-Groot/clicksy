@@ -9,6 +9,8 @@ et enregistrement vidéo, pour les tutos e-learning, les démos de logiciels et 
 ![Windows 10/11](https://img.shields.io/badge/Windows-10%20%2F%2011-0078d4?style=for-the-badge)
 ![Licence MIT](https://img.shields.io/github/license/Fr-Groot/clicksy?style=for-the-badge&label=Licence)
 
+🌐 **Site : [fr-groot.github.io/clicksy](https://fr-groot.github.io/clicksy/)**
+
 <p align="center">
   <img src="docs/images/spotlight.png" alt="Spotlight et anneau autour du curseur sur la fenêtre de réglages de Clicksy" width="640">
   &nbsp;
