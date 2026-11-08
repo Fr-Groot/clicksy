@@ -1,10 +1,11 @@
-//! Capture d'écran de l'écran où se trouve la souris : PNG dans Images\Clicksy
-//! (ou le dossier choisi) et copie dans le presse-papiers.
+//! Capture de l'écran où se trouve la souris : PNG dans le dossier de la session
+//! (ou Images\Clicksy si les sessions sont désactivées) et copie dans le presse-papiers.
 //! Les effets Clicksy visibles sont inclus ; la barre d'outils ne l'est pas si elle est
 //! exclue des captures.
 
 use fx_core::Shared;
 use std::path::{Path, PathBuf};
+use std::sync::atomic::Ordering;
 use windows::core::{HSTRING, PWSTR};
 use windows::Win32::Foundation::{HANDLE, HGLOBAL, POINT};
 use windows::Win32::Graphics::Gdi::*;
@@ -13,43 +14,50 @@ use windows::Win32::System::Com::*;
 use windows::Win32::System::DataExchange::{CloseClipboard, EmptyClipboard, OpenClipboard, SetClipboardData};
 use windows::Win32::System::Memory::{GlobalAlloc, GlobalLock, GlobalUnlock, GMEM_MOVEABLE};
 use windows::Win32::System::Ole::CF_DIB;
-use windows::Win32::System::SystemInformation::GetLocalTime;
-use windows::Win32::UI::Shell::{FOLDERID_Pictures, SHGetKnownFolderPath, KF_FLAG_DEFAULT};
 use windows::Win32::UI::WindowsAndMessaging::GetCursorPos;
 
 pub fn take(shared: &Shared) {
-    // On retire la bulle éventuelle pour qu'elle n'apparaisse pas sur l'image.
-    shared.fx.lock().unwrap().banner = None;
-    shared.wake();
-    std::thread::sleep(std::time::Duration::from_millis(150));
-
+    let mut pt = POINT::default();
+    unsafe {
+        let _ = GetCursorPos(&mut pt);
+    }
     let cfg = shared.config.load_full();
-    match unsafe { capture(&cfg.capture.folder, cfg.capture.copy_to_clipboard) } {
+    match save(shared, pt, "Capture", cfg.capture.copy_to_clipboard) {
         Ok(path) => {
-            let name = path.file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_default();
             let extra = if cfg.capture.copy_to_clipboard { " et copiée" } else { "" };
-            shared.banner(format!("Capture enregistrée{extra} : {name}"));
+            shared.banner(format!("Capture enregistrée{extra} : {}", file_name(&path)));
         }
         Err(e) => shared.banner(format!("Capture impossible : {e}")),
     }
 }
 
-fn pictures_dir() -> PathBuf {
-    unsafe {
-        if let Ok(p) = SHGetKnownFolderPath(&FOLDERID_Pictures, KF_FLAG_DEFAULT, None) {
-            let s = p.to_string().unwrap_or_default();
-            CoTaskMemFree(Some(p.0 as *const _));
-            if !s.is_empty() {
-                return PathBuf::from(s);
-            }
-        }
-    }
-    std::env::var_os("USERPROFILE").map(|h| PathBuf::from(h).join("Pictures")).unwrap_or_else(std::env::temp_dir)
+pub fn file_name(p: &Path) -> String {
+    p.file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_default()
 }
 
-unsafe fn capture(folder: &str, clipboard: bool) -> Result<PathBuf, String> {
-    let mut pt = POINT::default();
-    let _ = GetCursorPos(&mut pt);
+/// Enregistre l'écran qui contient `pt` (« Capture » ou « Tableau »).
+/// Bulle, touches affichées et pointeur de dessin sont masqués le temps de la capture.
+pub fn save(shared: &Shared, pt: POINT, kind: &str, clipboard: bool) -> Result<PathBuf, String> {
+    shared.fx.lock().unwrap().banner = None;
+    shared.modes.snapshot.store(true, Ordering::Release);
+    shared.wake();
+    std::thread::sleep(std::time::Duration::from_millis(150));
+    let grabbed = unsafe { grab(pt) };
+    shared.modes.snapshot.store(false, Ordering::Release);
+    shared.wake();
+    let (w, h, pixels) = grabbed?;
+    let path = crate::session::image_path(shared, kind)?;
+    unsafe {
+        save_png(&path, w as u32, h as u32, &pixels).map_err(|e| format!("PNG : {e}"))?;
+        if clipboard {
+            let _ = copy_to_clipboard(w, h, &pixels);
+        }
+    }
+    Ok(path)
+}
+
+/// Copie de l'écran composé (fenêtres + surcouche Clicksy), en BGRA opaque.
+unsafe fn grab(pt: POINT) -> Result<(i32, i32, Vec<u8>), String> {
     let mon = MonitorFromPoint(pt, MONITOR_DEFAULTTONEAREST);
     let mut info = MONITORINFO { cbSize: std::mem::size_of::<MONITORINFO>() as u32, ..Default::default() };
     if !GetMonitorInfoW(mon, &mut info).as_bool() {
@@ -88,19 +96,7 @@ unsafe fn capture(folder: &str, clipboard: bool) -> Result<PathBuf, String> {
     for px in pixels.chunks_exact_mut(4) {
         px[3] = 255;
     }
-
-    let dir = if folder.trim().is_empty() { pictures_dir().join("Clicksy") } else { PathBuf::from(folder.trim()) };
-    std::fs::create_dir_all(&dir).map_err(|e| format!("dossier {} : {e}", dir.display()))?;
-    let t = GetLocalTime();
-    let path = dir.join(format!(
-        "Capture {:04}-{:02}-{:02} {:02}-{:02}-{:02}.png",
-        t.wYear, t.wMonth, t.wDay, t.wHour, t.wMinute, t.wSecond
-    ));
-    save_png(&path, w as u32, h as u32, &pixels).map_err(|e| format!("PNG : {e}"))?;
-    if clipboard {
-        let _ = copy_to_clipboard(w, h, &pixels);
-    }
-    Ok(path)
+    Ok((w, h, pixels))
 }
 
 unsafe fn save_png(path: &Path, w: u32, h: u32, bgra: &[u8]) -> windows::core::Result<()> {

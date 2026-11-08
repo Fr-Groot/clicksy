@@ -4,7 +4,7 @@
 use crossbeam_channel::Receiver;
 use fx_bus::{Action, Event, EventKind, MouseButton};
 use fx_core::{paths, Config, DrawTool, Ripple, Shape, Shared};
-use std::sync::atomic::Ordering;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 use std::time::Instant;
 use windows::Win32::Foundation::POINT;
@@ -25,7 +25,9 @@ pub fn start(shared: Arc<Shared>, rx: Receiver<Event>, on_config_changed: impl F
         .name("clicksy-engine".into())
         .spawn(move || {
             let mut keys = Keys::default();
+            let mut shown = crate::keys::Keys::default();
             for ev in rx {
+                shown.on_event(&shared, &ev.kind);
                 let drawing = shared.modes.draw.load(Ordering::Relaxed);
                 // Choix de la source d'enregistrement : la souris sert à désigner fenêtre ou zone.
                 if shared.modes.select.load(Ordering::Relaxed) != 0 {
@@ -247,11 +249,42 @@ fn undo(shared: &Shared) {
 }
 
 fn clear(shared: &Shared) {
+    // Tableau : on garde une image avant d'effacer (comme on photographie un vrai tableau).
+    let saved = save_board(shared);
     with_draw(shared, |d| {
         d.current = None;
         d.shapes.clear();
-        Some("Dessins effacés".into())
+        Some(if saved { "Tableau enregistré puis effacé".into() } else { "Dessins effacés".into() })
     });
+}
+
+/// Génération des dessins lors de la dernière image du tableau (évite les doublons).
+static BOARD_SAVED_GEN: AtomicU64 = AtomicU64::new(u64::MAX);
+
+/// Enregistre une image du tableau ouvert s'il contient des dessins. Renvoie `true` si c'est fait.
+fn save_board(shared: &Shared) -> bool {
+    let m = &shared.modes;
+    if !shared.config.load().draw.save_board || m.board.load(Ordering::Acquire) == 0 {
+        return false;
+    }
+    let (empty, generation) = {
+        let fx = shared.fx.lock().unwrap();
+        (fx.draw.shapes.is_empty() && fx.draw.current.is_none(), fx.draw.generation)
+    };
+    if empty || BOARD_SAVED_GEN.load(Ordering::Acquire) == generation {
+        return false;
+    }
+    let pt = POINT { x: m.board_x.load(Ordering::Acquire), y: m.board_y.load(Ordering::Acquire) };
+    match crate::capture::save(shared, pt, "Tableau", false) {
+        Ok(_) => {
+            BOARD_SAVED_GEN.store(generation, Ordering::Release);
+            true
+        }
+        Err(e) => {
+            shared.banner(format!("Image du tableau impossible : {e}"));
+            false
+        }
+    }
 }
 
 /// Touches du mode dessin. Renvoie `true` si le mode dessin a été quitté.
@@ -289,6 +322,7 @@ fn set_color(shared: &Shared, i: usize) {
 }
 
 fn set_draw_mode(shared: &Shared, on: bool, banner: bool) {
+    let saved = !on && save_board(shared);
     let cfg = shared.config.load();
     shared.modes.draw.store(on, Ordering::Release);
     {
@@ -315,7 +349,7 @@ fn set_draw_mode(shared: &Shared, on: bool, banner: bool) {
         if on {
             shared.banner("Mode dessin · 1 2 3 couleurs · P stylo · R cadre · E rond · F flèche · Échap efface");
         } else {
-            shared.banner("Souris normale");
+            shared.banner(if saved { "Souris normale · image du tableau enregistrée" } else { "Souris normale" });
         }
     } else {
         shared.wake();
@@ -350,7 +384,9 @@ fn set_board(shared: &Shared, target: u8) {
             None
         });
     }
+    let mut saved = false;
     if cur != 0 && next == 0 {
+        saved = save_board(shared);
         with_draw(shared, |d| {
             d.current = None;
             std::mem::swap(&mut d.shapes, &mut d.stash);
@@ -362,6 +398,7 @@ fn set_board(shared: &Shared, target: u8) {
     shared.banner(match next {
         1 => "Tableau blanc · dessine directement · Échap efface",
         2 => "Tableau noir",
+        _ if saved => "Tableau fermé · image enregistrée",
         _ => "Tableau fermé",
     });
 }
@@ -447,10 +484,18 @@ fn apply(shared: &Arc<Shared>, action: Action) -> bool {
             }
             return true;
         }
-        Action::OpenVideosFolder => {
+        Action::OpenVideosFolder | Action::OpenSessionFolder if crate::session::enabled(shared) => {
+            crate::session::open(shared);
+            return false;
+        }
+        Action::OpenVideosFolder | Action::OpenSessionFolder => {
             let dir = crate::recorder::videos_dir(shared);
             let _ = std::fs::create_dir_all(&dir);
             let _ = std::process::Command::new("explorer.exe").arg(&dir).spawn();
+            return false;
+        }
+        Action::NewSession => {
+            crate::session::new_session(shared);
             return false;
         }
         Action::Screenshot => {
@@ -488,6 +533,7 @@ fn apply(shared: &Arc<Shared>, action: Action) -> bool {
             Action::ToggleClickSound => c.clicks.sound = !c.clicks.sound,
             Action::ToggleTrail => c.trail.enabled = !c.trail.enabled,
             Action::ToggleToolbar => c.toolbar.visible = !c.toolbar.visible,
+            Action::ToggleKeys => c.keys.enabled = !c.keys.enabled,
             Action::ToggleRecordAudio(0) => c.record.system_audio = !c.record.system_audio,
             Action::ToggleRecordAudio(_) => c.record.mic = !c.record.mic,
             Action::ToolbarMoved { x, y } => {
@@ -515,6 +561,7 @@ fn banner_for(action: &Action, c: &Config) -> Option<String> {
         Action::ToggleClickSound => format!("Son de clic {}", on_off(c.clicks.sound)),
         Action::ToggleTrail => format!("Traînée {}", if c.trail.enabled { "activée" } else { "désactivée" }),
         Action::ToggleToolbar => format!("Barre d'outils {}", if c.toolbar.visible { "affichée" } else { "masquée" }),
+        Action::ToggleKeys => format!("Affichage des touches {}", on_off(c.keys.enabled)),
         _ => return None,
     })
 }

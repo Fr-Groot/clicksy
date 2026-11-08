@@ -180,19 +180,5 @@ fn match_hotkey(ctx: &Ctx, vk: u32) -> Option<Action> {
         vk,
     };
     let cfg = ctx.shared.config.load();
-    let hk = &cfg.hotkeys;
-    let table = [
-        (hk.toggle_all, Action::ToggleAll),
-        (hk.cycle_spotlight, Action::ToggleSpotlight),
-        (hk.toggle_ring, Action::ToggleRing),
-        (hk.toggle_clicks, Action::ToggleClicks),
-        (hk.toggle_draw, Action::ToggleDraw),
-        (hk.toggle_laser, Action::ToggleLaser),
-        (hk.toggle_trail, Action::ToggleTrail),
-        (hk.toggle_toolbar, Action::ToggleToolbar),
-        (hk.cycle_board, Action::CycleBoard),
-        (hk.screenshot, Action::Screenshot),
-        (hk.toggle_record, Action::ToggleRecord),
-    ];
-    table.into_iter().find(|(h, _)| *h == Some(pressed)).map(|(_, a)| a)
+    cfg.hotkeys.table().into_iter().find(|(h, _)| *h == Some(pressed)).map(|(_, a)| a)
 }

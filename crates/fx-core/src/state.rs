@@ -36,6 +36,18 @@ pub struct Banner {
     pub start: Instant,
 }
 
+/// Touches affichées en bas de l'écran.
+#[derive(Debug, Clone)]
+pub struct KeyShow {
+    /// Libellés des touches (« Ctrl », « Maj », « C »).
+    pub parts: Vec<String>,
+    /// `true` : combinaison (touches reliées par « + ») ; `false` : suite de touches tapées.
+    pub combo: bool,
+    /// Combinaison répétée : ×2, ×3…
+    pub count: u32,
+    pub start: Instant,
+}
+
 #[derive(Debug)]
 pub struct DrawState {
     pub tool: DrawTool,
@@ -71,6 +83,7 @@ pub struct FxState {
     pub held: [bool; 3],
     pub draw: DrawState,
     pub banner: Option<Banner>,
+    pub keys: Option<KeyShow>,
     /// Compte à rebours avant enregistrement : début, et rectangle visé (bureau).
     pub countdown: Option<(Instant, [i32; 4])>,
     /// Zone en cours de tracé (sélection « zone ») : [gauche, haut, droite, bas].
@@ -99,6 +112,8 @@ pub struct Modes {
     pub rec_exclude: AtomicBool,
     /// Choix de la source à la souris : 0 aucun, 1 fenêtre, 2 zone.
     pub select: AtomicU8,
+    /// Capture d'écran en cours : la surcouche cache bulle, touches et pointeur de dessin.
+    pub snapshot: AtomicBool,
 }
 
 impl Modes {

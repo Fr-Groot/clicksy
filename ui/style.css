@@ -278,3 +278,4 @@ input[type="color"] {
   .slider { width: 200px; }
   .row { flex-wrap: wrap; }
 }
+.btns { display: flex; gap: 8px; flex: none; }

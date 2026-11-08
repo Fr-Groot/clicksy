@@ -106,9 +106,12 @@ fn timestamp_label() -> String {
     format!("{:04}-{:02}-{:02} {:02}-{:02}-{:02}", t.wYear, t.wMonth, t.wDay, t.wHour, t.wMinute, t.wSecond)
 }
 
-/// Crée `<dossier>\Enregistrement AAAA-MM-JJ HH-MM-SS`.
-pub fn new_dir(parent: &Path) -> Result<PathBuf, String> {
-    let dir = parent.join(format!("Enregistrement {}", timestamp_label()));
+/// Crée `<dossier>\<nom>`, ou `<dossier>\Enregistrement AAAA-MM-JJ HH-MM-SS` sans nom.
+pub fn new_dir(parent: &Path, name: Option<&str>) -> Result<PathBuf, String> {
+    let dir = match name {
+        Some(n) => parent.join(n),
+        None => parent.join(format!("Enregistrement {}", timestamp_label())),
+    };
     std::fs::create_dir_all(dir.join("cursors")).map_err(|e| format!("dossier {} : {e}", dir.display()))?;
     Ok(dir)
 }

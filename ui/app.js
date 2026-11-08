@@ -8,17 +8,19 @@ const MOCK = {
   ring: { enabled: true, radius: 26, thickness: 4, color: "#FFC400", opacity: 0.9, pulse: false, pulse_period_ms: 1400 },
   clicks: { enabled: true, left_color: "#1E90FF", right_color: "#FF3B5C", middle_color: "#2ECC71", radius: 42, thickness: 4,
             duration_ms: 450, show_held: true, sound: false, sound_volume: 0.5 },
-  draw: { colors: ["#FF3B30", "#FFCC00", "#1E90FF"], width: 5, default_tool: "Pen", clear_on_exit: true },
+  draw: { colors: ["#FF3B30", "#FFCC00", "#1E90FF"], width: 5, default_tool: "Pen", clear_on_exit: true, save_board: true },
   trail: { enabled: false, color: "#FFC400", duration_ms: 350, width: 6 },
   laser: { color: "#FF2222", size: 7, duration_ms: 600 },
   show_banner: true,
   toolbar: { visible: true, hide_from_capture: true, x: null, y: null },
   capture: { folder: "", copy_to_clipboard: true },
   record: { system_audio: true, mic: true, fps: 30, countdown: true, folder: "", open_folder_after: true, burn_effects: true },
+  keys: { enabled: false, all_keys: false, mouse: true, position: "Center", duration_ms: 1600, size: 22 },
+  session: { enabled: true, folder: "" },
   hotkeys: { toggle_all: "Ctrl+Alt+Maj+A", cycle_spotlight: "Ctrl+Alt+Maj+S", toggle_ring: "Ctrl+Alt+Maj+R", toggle_clicks: "Ctrl+Alt+Maj+C",
              toggle_draw: "Ctrl+Alt+Maj+D", toggle_laser: "Ctrl+Alt+Maj+L", toggle_trail: "Ctrl+Alt+Maj+T",
              toggle_toolbar: "Ctrl+Alt+Maj+O", cycle_board: "Ctrl+Alt+Maj+W", screenshot: "Ctrl+Alt+Maj+P",
-             toggle_record: "Ctrl+Alt+Maj+E" },
+             toggle_record: "Ctrl+Alt+Maj+E", toggle_keys: "Ctrl+Alt+Maj+K" },
 };
 const api = TAURI
   ? {
@@ -27,6 +29,8 @@ const api = TAURI
       set: (config, save) => TAURI.core.invoke("set_config", { config, save }),
       openDir: () => TAURI.core.invoke("open_data_dir"),
       dataDir: () => TAURI.core.invoke("data_dir"),
+      action: (name) => TAURI.core.invoke("run_action", { name }),
+      session: () => TAURI.core.invoke("session_info"),
       onChange: (cb) => TAURI.event.listen("config-changed", (e) => cb(e.payload)),
     }
   : {
@@ -35,6 +39,8 @@ const api = TAURI
       set: async (c) => c,
       openDir: async () => {},
       dataDir: async () => "(aperçu hors application)",
+      action: async () => {},
+      session: async () => ["", "C:\Users\…\Documents\Clicksy"],
       onChange: () => {},
     };
 
@@ -106,6 +112,8 @@ function render() {
   dim("#trail .card:first-of-type", cfg.trail.enabled);
   dimRow("clicks.sound_volume", cfg.clicks.sound);
   dimRow("ring.pulse_period_ms", cfg.ring.pulse);
+  dim("#keys .card", cfg.keys.enabled);
+  document.getElementById("new-session").disabled = !cfg.session.enabled;
   const shape = cfg.spotlight.shape;
   document.getElementById("spot-on").checked = cfg.spotlight.mode !== "Off";
   dimRow("spotlight.radius", shape === "Circle");
@@ -130,7 +138,8 @@ function bind() {
       el.addEventListener("click", (e) => {
         const b = e.target.closest("button");
         if (!b) return;
-        setPath(cfg, path, el.hasAttribute("data-number") ? Number(b.dataset.value) : b.dataset.value);
+        const raw = b.dataset.value;
+        setPath(cfg, path, el.hasAttribute("data-number") ? Number(raw) : el.hasAttribute("data-bool") ? raw === "true" : raw);
         // Changer de forme pendant que le spotlight est allumé : la nouvelle forme s'affiche tout de suite.
         if (path === "spotlight.shape" && cfg.spotlight.mode !== "Off") cfg.spotlight.mode = b.dataset.value;
         render();
@@ -171,6 +180,12 @@ function bind() {
     pushSave();
   });
   document.getElementById("open-dir").addEventListener("click", () => api.openDir());
+  document.getElementById("new-session").addEventListener("click", async () => {
+    await api.action("new_session");
+    toast("Nouvelle session : les prochains éléments iront dans un nouveau dossier");
+    setTimeout(showSession, 300);
+  });
+  document.getElementById("open-session").addEventListener("click", () => api.action("open_session"));
   document.getElementById("reset").addEventListener("click", async () => {
     if (!confirm("Remettre tous les réglages et raccourcis par défaut ?")) return;
     cfg = await api.defaults();
@@ -258,6 +273,13 @@ function checkHotkeys() {
 }
 
 // ---------- Divers ----------
+async function showSession() {
+  const [current, root] = await api.session();
+  const el = document.getElementById("session-dir");
+  el.classList.toggle("mono", !!current);
+  el.textContent = current
+    || `Pas encore de dossier : il sera créé dans ${root} au premier élément enregistré.`;
+}
 let toastTimer;
 function toast(msg) {
   const t = document.getElementById("toast");
@@ -273,5 +295,7 @@ function showError(e) { toast(String(e)); }
   cfg = await api.get();
   render();
   document.getElementById("data-dir").textContent = await api.dataDir();
+  showSession();
+  window.addEventListener("focus", showSession);
   api.onChange((c) => { if (!dragging) { cfg = c; render(); } });
 })();

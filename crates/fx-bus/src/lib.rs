@@ -65,6 +65,12 @@ pub enum Action {
     /// Active/désactive une piste son pour les prochains enregistrements (0 PC, 1 micro).
     ToggleRecordAudio(u8),
     OpenVideosFolder,
+    /// Affichage des touches et combinaisons pressées.
+    ToggleKeys,
+    /// Démarre une nouvelle session : le prochain élément enregistré ouvre un nouveau dossier.
+    NewSession,
+    /// Ouvre le dossier de la session en cours (ou le dossier des sessions).
+    OpenSessionFolder,
     ReloadConfig,
     Quit,
 }

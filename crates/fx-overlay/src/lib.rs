@@ -194,31 +194,50 @@ unsafe fn render_frame(
     let _ = GetCursorPos(&mut pt);
     let scale = surfaces.iter().find(|s| s.contains(pt.x, pt.y)).map(|s| s.scale).unwrap_or(1.0);
 
-    let (ripples, held, draw_tool, draw_color, banner, color_index, draw_width, zone, countdown, rec) = {
+    let snapshot = shared.modes.snapshot.load(Ordering::Acquire);
+    let keys_ms = cfg.keys.duration_ms as f32;
+    let (ripples, held, draw_tool, draw_color, banner, color_index, draw_width, zone, countdown, rec, keys) = {
         let mut fx = shared.fx.lock().unwrap();
         let dur = Duration::from_millis(cfg.clicks.duration_ms as u64);
         fx.ripples.retain(|r| now.saturating_duration_since(r.start) < dur);
         if fx.banner.as_ref().is_some_and(|b| now.saturating_duration_since(b.start).as_secs_f32() * 1000.0 > BANNER_MS) {
             fx.banner = None;
         }
+        if fx.keys.as_ref().is_some_and(|k| !cfg.keys.enabled || now.saturating_duration_since(k.start).as_secs_f32() * 1000.0 > keys_ms) {
+            fx.keys = None;
+        }
+        // Pendant une capture d'écran, ni bulle ni touches sur l'image.
+        let keys = fx
+            .keys
+            .as_ref()
+            .filter(|_| !snapshot)
+            .map(|k| (k.parts.clone(), k.combo, k.count, now.saturating_duration_since(k.start).as_secs_f32() * 1000.0));
         let d = &fx.draw;
         if d.generation != st.shapes_gen {
             st.shapes = d.shapes.iter().chain(d.current.iter()).cloned().collect();
             st.shapes_gen = d.generation;
         }
         let color = cfg.draw.colors[d.color_index.min(2)];
-        let banner = fx.banner.as_ref().map(|b| (b.text.clone(), now.saturating_duration_since(b.start).as_secs_f32() * 1000.0));
+        let banner = fx
+            .banner
+            .as_ref()
+            .filter(|_| !snapshot)
+            .map(|b| (b.text.clone(), now.saturating_duration_since(b.start).as_secs_f32() * 1000.0));
         let countdown = fx.countdown.map(|(start, r)| {
             let left = 3.0 - now.saturating_duration_since(start).as_secs_f32();
             (left.ceil().max(1.0) as u32, r)
         });
-        (fx.ripples.clone(), fx.held, d.tool, color, banner, d.color_index, d.width, fx.select_rect, countdown, fx.rec)
-
+        (fx.ripples.clone(), fx.held, d.tool, color, banner, d.color_index, d.width, fx.select_rect, countdown, fx.rec, keys)
     };
     // Fondu d'entrée (120 ms) et de sortie (400 ms) de la bulle.
     let banner = banner.map(|(t, ms)| {
         let a = (ms / 120.0).min(1.0).min(((BANNER_MS - ms) / 400.0).clamp(0.0, 1.0));
         (t, a)
+    });
+    // Touches : apparition rapide (80 ms), disparition en douceur (300 ms).
+    let keys = keys.map(|(p, combo, count, ms)| {
+        let a = (ms / 80.0).min(1.0).min(((keys_ms - ms) / 300.0).clamp(0.0, 1.0));
+        (p, combo, count, a)
     });
 
     // Traînée : on enregistre la position à chaque image, et on oublie les points trop vieux.
@@ -258,9 +277,12 @@ unsafe fn render_frame(
         pulse,
         shapes: &st.shapes,
         draw_mode,
+        // Le pointeur du mode dessin n'apparaît pas sur les captures (image du tableau).
+        draw_pointer: draw_mode && !snapshot,
         draw_tool,
         draw_color,
         laser,
+        keys: keys.as_ref().map(|(p, combo, count, a)| (p.as_slice(), *combo, *count, *a)),
         trail: &trail,
         banner: banner.as_ref().map(|(t, a)| (t.as_str(), *a)),
         board,
@@ -303,7 +325,8 @@ unsafe fn render_frame(
     let animating = countdown.is_some()
         || (cfg.enabled && (!ripples.is_empty() || (cfg.ring.enabled && cfg.ring.pulse && !laser && !draw_mode)))
         || trail.len() >= 2
-        || banner.is_some();
+        || banner.is_some()
+        || keys.is_some();
     Ok((presented, animating))
 }
 

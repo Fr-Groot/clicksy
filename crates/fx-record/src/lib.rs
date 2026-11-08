@@ -47,6 +47,8 @@ pub struct Options {
     pub cursor: bool,
     /// Dossier parent ; le projet est créé dedans.
     pub folder: PathBuf,
+    /// Nom du dossier du projet ; absent = « Enregistrement <date heure> ».
+    pub name: Option<String>,
 }
 
 pub struct Recording {
@@ -60,7 +62,7 @@ pub struct Recording {
 
 impl Recording {
     pub fn start(opts: Options) -> Result<Recording, String> {
-        let dir = project::new_dir(&opts.folder)?;
+        let dir = project::new_dir(&opts.folder, opts.name.as_deref())?;
         let t0 = clock::now_100ns();
         let stop = Arc::new(AtomicBool::new(false));
         let source = project::describe(&opts.target)?;

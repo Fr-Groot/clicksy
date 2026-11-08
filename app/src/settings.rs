@@ -81,3 +81,22 @@ pub fn open_data_dir(shared: State<Arc<Shared>>) {
 pub fn data_dir(shared: State<Arc<Shared>>) -> String {
     shared.data_dir.display().to_string()
 }
+
+/// Boutons de l'interface qui déclenchent une action (« Nouvelle session »…).
+#[tauri::command]
+pub fn run_action(name: String) -> Result<(), String> {
+    let action = match name.as_str() {
+        "new_session" => fx_bus::Action::NewSession,
+        "open_session" => fx_bus::Action::OpenSessionFolder,
+        _ => return Err(format!("action inconnue : {name}")),
+    };
+    fx_bus::action(action);
+    Ok(())
+}
+
+/// Dossier de la session en cours (vide si rien n'a encore été enregistré) et dossier des sessions.
+#[tauri::command]
+pub fn session_info(shared: State<Arc<Shared>>) -> (String, String) {
+    let current = crate::session::current().map(|d| d.display().to_string()).unwrap_or_default();
+    (current, crate::session::root(&shared).display().to_string())
+}

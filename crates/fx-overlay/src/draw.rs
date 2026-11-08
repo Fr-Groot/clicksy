@@ -24,6 +24,8 @@ pub struct Frame<'a> {
     /// Formes terminées + forme en cours.
     pub shapes: &'a [Shape],
     pub draw_mode: bool,
+    /// Pastille de couleur et outil à côté du curseur (masquée pendant une capture).
+    pub draw_pointer: bool,
     pub draw_tool: DrawTool,
     pub draw_color: Color,
     pub laser: bool,
@@ -31,6 +33,8 @@ pub struct Frame<'a> {
     pub trail: &'a [(f32, f32, f32)],
     /// Texte de la bulle et son opacité.
     pub banner: Option<(&'a str, f32)>,
+    /// Touches affichées : libellés, combinaison ou suite, répétitions, opacité.
+    pub keys: Option<(&'a [String], bool, u32, f32)>,
     /// Tableau plein écran : 0 aucun, 1 blanc, 2 noir, sur l'écran qui contient `board_pt`.
     pub board: u8,
     pub board_pt: (i32, i32),
@@ -82,7 +86,8 @@ pub fn is_dynamic(s: &Surface, f: &Frame) -> bool {
     let near = |x: f32, y: f32, m: f32| x + m >= l && x - m < r && y + m >= t && y - m < b;
 
     // Modes explicites : actifs même quand les effets sont en pause.
-    if f.draw_mode || f.select != 0 || f.countdown.is_some() || (f.banner.is_some() && s.contains(f.cursor.0, f.cursor.1)) {
+    let here = s.contains(f.cursor.0, f.cursor.1);
+    if f.draw_mode || f.select != 0 || f.countdown.is_some() || ((f.banner.is_some() || f.keys.is_some()) && here) {
         return true;
     }
     let margin = 60.0 * f.scale;
@@ -176,7 +181,7 @@ pub fn draw(gpu: &Gpu, s: &Surface, f: &Frame) -> Result<()> {
         if f.laser {
             annot::draw_laser(gpu, f, cx, cy)?;
         }
-        if f.draw_mode {
+        if f.draw_pointer {
             annot::draw_pointer(gpu, f, cx, cy);
         }
         if let Some(r) = f.rec_rect {
@@ -189,6 +194,9 @@ pub fn draw(gpu: &Gpu, s: &Surface, f: &Frame) -> Result<()> {
             annot::draw_countdown(gpu, s, n, r)?;
         }
         if s.contains(f.cursor.0, f.cursor.1) {
+            if let Some((parts, combo, count, alpha)) = f.keys {
+                annot::draw_keys(gpu, s, &f.cfg.keys, parts, combo, count, alpha)?;
+            }
             if let Some((text, alpha)) = f.banner {
                 annot::draw_banner(gpu, s, text, alpha)?;
             }

@@ -92,9 +92,10 @@ L'icône (un anneau jaune) apparaît dans la zone de notification, à côté de 
 | Ctrl + Alt + Maj + L | Pointeur laser |
 | Ctrl + Alt + Maj + D | Mode dessin |
 | Ctrl + Alt + Maj + W | Tableau : blanc → noir → fermé |
-| Ctrl + Alt + Maj + P | Capture d'écran (Images\Clicksy + presse-papiers) |
+| Ctrl + Alt + Maj + P | Capture d'écran (dossier de la session + presse-papiers) |
 | Ctrl + Alt + Maj + O | Afficher / masquer la barre d'outils |
 | Ctrl + Alt + Maj + E | Enregistrer l'écran de la souris / arrêter l'enregistrement |
+| Ctrl + Alt + Maj + K | Afficher les touches pressées |
 
 Tous se modifient dans **Réglages › Raccourcis**. Clicksy signale les doublons, les raccourcis déjà pris
 par Teams, Office ou Windows, et les combinaisons qui correspondent à AltGr sur un clavier AZERTY.
@@ -104,7 +105,7 @@ Une bulle de confirmation (« Spotlight : cercle »…) s'affiche brièvement en
 
 Une barre flottante (bord droit par défaut) donne accès à tout sans raccourci : Souris, Stylo, Cadre,
 Rond, Flèche, épaisseur du trait, 3 couleurs, Annuler, Effacer, tableau Blanc, tableau Noir, Spot, Laser,
-Capture, Réglages, et un petit bouton « réduire » dans la poignée. Les réglages (forme du spotlight, couleurs…)
+Capture, Touches, Réglages, et un petit bouton « réduire » dans la poignée. Les réglages (forme du spotlight, couleurs…)
 se choisissent dans la fenêtre Réglages ; la barre sert à les appliquer.
 
 - **Ne prend jamais le focus** : cliquer dessus ne fait pas sortir PowerPoint du diaporama.
@@ -113,6 +114,8 @@ se choisissent dans la fenêtre Réglages ; la barre sert à les appliquer.
   des captures et des enregistrements (Windows 10 version 2004 ou plus récent).
 - Les boutons **Blanc** et **Noir** ouvrent le tableau sur l'écran de la souris (re-cliquer le ferme) ; les dessins faits dessus
   sont séparés de ceux de l'écran. « Souris » ferme le tableau et le mode dessin.
+- Quand on **efface** ou **ferme** un tableau qui contient des dessins, Clicksy en garde une **image**
+  (`Tableau HH-MM-SS.png`) dans le dossier de la session. Désactivable dans Réglages › Dessin.
 
 ### Mode dessin
 
@@ -129,6 +132,27 @@ Pendant le mode dessin, les clics servent à dessiner et **ne vont plus à l'app
 | Suppr | Tout effacer |
 | Échap | Tout effacer ; s'il n'y a plus rien, quitter le mode dessin |
 
+### Afficher les touches
+
+Bouton **Touches** de la barre, ou Ctrl + Alt + Maj + K : les raccourcis utilisés s'affichent en bas de
+l'écran, comme des touches de clavier (« Ctrl + C », « Alt + Tab », « Maj + Clic gauche », « Ctrl + Molette ↑ »).
+Une combinaison répétée affiche « ×2 », « ×3 »…
+
+- **Raccourcis seulement** (par défaut) : combinaisons avec Ctrl, Alt ou Win, F1 à F12, Échap. Le texte tapé n'apparaît pas.
+- **Toutes les touches** : le texte aussi, sauf quand le champ actif est un mot de passe (« Saisie masquée »,
+  détecté par UI Automation ; en cas de doute, Clicksy masque).
+- AltGr (@, #, € en AZERTY) n'est pas pris pour un raccourci ; les raccourcis de Clicksy ne s'affichent pas.
+- Rien n'est écrit sur le disque : les touches restent affichées quelques secondes, puis sont oubliées.
+  Elles apparaissent dans les vidéos en mode incrusté, jamais sur les captures d'écran.
+
+### Sessions
+
+Tout ce qui est enregistré pendant une séance va dans **un seul dossier** :
+`Documents\Clicksy\AAAA-MM-JJ HHhMM\` (captures, images du tableau, et un sous-dossier `Vidéo HH-MM-SS` par
+enregistrement). Une session commence au lancement de Clicksy et chaque jour ; **Menu › Nouvelle session**
+(ou le bouton des Réglages) en ouvre une autre. Le dossier n'est créé qu'au premier élément enregistré.
+Désactivable dans Réglages › Général : on retrouve alors `Images\Clicksy` et `Vidéos\Clicksy`.
+
 ### Enregistrement vidéo
 
 Bouton **Vidéo** de la barre d'outils : écran entier, une fenêtre (clic dessus) ou une zone (tracée à la souris),
@@ -143,7 +167,7 @@ affiche le chrono ; un clic dessus arrête. Un cadre rouge entoure ce qui est en
 
 Dans les deux cas, le journal du curseur est enregistré, et les touches tapées ne le sont jamais.
 
-Chaque enregistrement crée un dossier dans `Vidéos\Clicksy` :
+Chaque enregistrement crée un dossier `Vidéo HH-MM-SS` dans le dossier de la session :
 
 | Fichier | Contenu |
 |---|---|
@@ -160,7 +184,7 @@ les effets Clicksy ne sont pas visibles non plus dans un partage Teams simultan�
 
 Avec Clicksy déjà lancé, `clicksy.exe --action <nom>` déclenche une action :
 `tout`, `spotlight`, `anneau`, `clics`, `trainee`, `laser`, `dessin`, `pulsation`, `son`,
-`tableau`, `blanc`, `noir`, `capture`, `barre`, `video`.
+`tableau`, `blanc`, `noir`, `capture`, `barre`, `video`, `touches`, `session` (nouvelle session).
 Pratique pour un bouton Stream Deck (action « Ouvrir » avec ces arguments).
 
 ## Test manuel
@@ -195,13 +219,20 @@ Pratique pour un bouton Stream Deck (action « Ouvrir » avec ces arguments).
 | 26 | Glisser la barre par sa poignée vers le bord gauche, relancer Clicksy | Elle s'aimante au bord gauche et y revient au redémarrage |
 | 27 | Teams : partager l'écran entier, regarder depuis un 2ᵉ appareil | Les effets sont visibles, la barre d'outils **ne l'est pas** |
 | 28 | Bouton Blanc, dessiner, bouton Noir, re-cliquer Noir | Blanc puis noir plein écran (mêmes dessins) ; fermé au 2ᵉ clic, les dessins de l'écran reviennent |
-| 29 | Bouton Capture | Bulle « Capture enregistrée et copiée » ; fichier PNG dans Images\Clicksy ; collable dans Word ou Teams |
+| 29 | Bouton Capture | Bulle « Capture enregistrée et copiée » ; fichier PNG dans le dossier de la session ; collable dans Word ou Teams |
 | 30 | Bouton Vidéo › Enregistrer l'écran entier, parler, bouger la souris, re-cliquer Vidéo | Compte à rebours 3-2-1, chrono dans la barre, cadre rouge ; à l'arrêt, dossier ouvert avec `screen.mp4` lisible, `mic.wav` audible |
 | 31 | Lire `screen.mp4` (mode incrusté par défaut) | La souris, l'anneau, les clics et les dessins sont dans la vidéo ; la barre d'outils n'y est pas |
 | 32 | Bouton Vidéo › Enregistrer une fenêtre…, cliquer sur une fenêtre | Seule cette fenêtre est filmée, même si on la déplace |
 | 33 | Bouton Vidéo › Enregistrer une zone…, tracer un rectangle | Dimensions affichées pendant le tracé ; cadre rouge autour de la zone pendant l'enregistrement |
 | 34 | Pendant le choix de la source, Échap ou clic droit | « Enregistrement annulé » |
 | 35 | Jouer une vidéo YouTube pendant un enregistrement | `system.wav` contient le son, synchronisé avec l'image |
+| 36 | Bouton Touches, puis Ctrl + C, Alt + Tab, Ctrl + Z trois fois | « Ctrl + C », « Alt + Tab », puis « Ctrl + Z ×3 » en bas de l'écran ; le texte tapé n'apparaît pas |
+| 37 | Réglages › Touches › « Toutes les touches », taper dans Notepad puis dans un champ mot de passe (connexion Windows d'un site, coffre…) | Les lettres s'affichent dans Notepad ; « Saisie masquée » dans le champ mot de passe |
+| 38 | Clavier AZERTY : AltGr + 0 dans Notepad | « @ » est tapé ; rien ne s'affiche en mode « Raccourcis seulement » |
+| 39 | Maj + clic, Ctrl + molette dans le navigateur | « Maj + Clic gauche », « Ctrl + Molette ↑ » |
+| 40 | Bouton Blanc, dessiner, Effacer, dessiner, re-cliquer Blanc | Deux images `Tableau …png` dans le dossier de la session, sans pointeur ni bulle ; « Tableau fermé · image enregistrée » |
+| 41 | Capture, puis vidéo de quelques secondes | Capture et dossier `Vidéo …` dans le même dossier `Documents\Clicksy\<date heure>` |
+| 42 | Menu › Nouvelle session, puis Capture | Nouveau dossier de session |
 
 ## Limites Windows connues
 

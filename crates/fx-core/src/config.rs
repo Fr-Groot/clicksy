@@ -22,7 +22,54 @@ pub struct Config {
     pub toolbar: ToolbarCfg,
     pub capture: CaptureCfg,
     pub record: RecordCfg,
+    pub keys: KeysCfg,
+    pub session: SessionCfg,
     pub hotkeys: HotkeysCfg,
+}
+
+/// Où s'affichent les touches pressées (en bas de l'écran de la souris).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum KeysPosition {
+    Left,
+    Center,
+    Right,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
+pub struct KeysCfg {
+    pub enabled: bool,
+    /// `false` : raccourcis seulement (Ctrl+C, Alt+Tab, F5…). `true` : toutes les touches,
+    /// sauf dans les champs mot de passe.
+    pub all_keys: bool,
+    /// Afficher aussi les clics faits avec Ctrl, Alt, Maj ou Win (« Maj + Clic gauche »).
+    pub mouse: bool,
+    pub position: KeysPosition,
+    /// Durée d'affichage.
+    pub duration_ms: u32,
+    /// Taille du texte (DIP).
+    pub size: f32,
+}
+
+impl Default for KeysCfg {
+    fn default() -> Self {
+        KeysCfg { enabled: false, all_keys: false, mouse: true, position: KeysPosition::Center, duration_ms: 1600, size: 22.0 }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
+pub struct SessionCfg {
+    /// Ranger captures, tableaux et vidéos d'une même session dans un seul dossier.
+    pub enabled: bool,
+    /// Dossier des sessions ; vide = Documents\Clicksy.
+    pub folder: String,
+}
+
+impl Default for SessionCfg {
+    fn default() -> Self {
+        SessionCfg { enabled: true, folder: String::new() }
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -55,6 +102,8 @@ pub struct DrawCfg {
     pub default_tool: DrawTool,
     /// Effacer les dessins en quittant le mode dessin.
     pub clear_on_exit: bool,
+    /// Enregistrer une image du tableau blanc/noir quand on l'efface ou le ferme.
+    pub save_board: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -190,6 +239,28 @@ pub struct HotkeysCfg {
     pub cycle_board: Option<Hotkey>,
     pub screenshot: Option<Hotkey>,
     pub toggle_record: Option<Hotkey>,
+    pub toggle_keys: Option<Hotkey>,
+}
+
+impl HotkeysCfg {
+    /// Tous les raccourcis de Clicksy et l'action de chacun.
+    pub fn table(&self) -> [(Option<Hotkey>, fx_bus::Action); 12] {
+        use fx_bus::Action;
+        [
+            (self.toggle_all, Action::ToggleAll),
+            (self.cycle_spotlight, Action::ToggleSpotlight),
+            (self.toggle_ring, Action::ToggleRing),
+            (self.toggle_clicks, Action::ToggleClicks),
+            (self.toggle_draw, Action::ToggleDraw),
+            (self.toggle_laser, Action::ToggleLaser),
+            (self.toggle_trail, Action::ToggleTrail),
+            (self.toggle_toolbar, Action::ToggleToolbar),
+            (self.cycle_board, Action::CycleBoard),
+            (self.screenshot, Action::Screenshot),
+            (self.toggle_record, Action::ToggleRecord),
+            (self.toggle_keys, Action::ToggleKeys),
+        ]
+    }
 }
 
 impl Default for DrawCfg {
@@ -203,6 +274,7 @@ impl Default for DrawCfg {
             width: 5.0,
             default_tool: DrawTool::Pen,
             clear_on_exit: true,
+            save_board: true,
         }
     }
 }
@@ -234,6 +306,8 @@ impl Default for Config {
             toolbar: ToolbarCfg::default(),
             capture: CaptureCfg { folder: String::new(), copy_to_clipboard: true },
             record: RecordCfg::default(),
+            keys: KeysCfg::default(),
+            session: SessionCfg::default(),
             hotkeys: HotkeysCfg::default(),
         }
     }
@@ -298,6 +372,7 @@ impl Default for HotkeysCfg {
             cycle_board: Hotkey::parse("Ctrl+Alt+Maj+W"),
             screenshot: Hotkey::parse("Ctrl+Alt+Maj+P"),
             toggle_record: Hotkey::parse("Ctrl+Alt+Maj+E"),
+            toggle_keys: Hotkey::parse("Ctrl+Alt+Maj+K"),
         }
     }
 }
@@ -334,6 +409,8 @@ impl Config {
         let l = &mut self.laser;
         l.size = l.size.clamp(2.0, 40.0);
         l.duration_ms = l.duration_ms.clamp(50, 3000);
+        self.keys.duration_ms = self.keys.duration_ms.clamp(500, 6000);
+        self.keys.size = self.keys.size.clamp(12.0, 48.0);
         self.record.fps = if self.record.fps >= 45 { 60 } else { 30 };
     }
 }

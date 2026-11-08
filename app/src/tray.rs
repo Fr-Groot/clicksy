@@ -35,6 +35,9 @@ const ID_TOOLBAR: usize = 35;
 const ID_BOARD: usize = 36;
 const ID_CAPTURE: usize = 37;
 const ID_RECORD: usize = 38;
+const ID_KEYS: usize = 39;
+const ID_NEW_SESSION: usize = 42;
+const ID_OPEN_SESSION: usize = 43;
 const ID_OPEN_DIR: usize = 40;
 const ID_RELOAD: usize = 41;
 const ID_QUIT: usize = 99;
@@ -84,7 +87,7 @@ pub fn shutdown() {
 
 /// Actions déclenchables en ligne de commande (`clicksy.exe --action dessin`),
 /// par exemple depuis un Stream Deck ou un script. 0 = ouvrir les réglages.
-pub const CLI_ACTIONS: [(&str, fn() -> Action); 15] = [
+pub const CLI_ACTIONS: [(&str, fn() -> Action); 17] = [
     ("tout", || Action::ToggleAll),
     ("spotlight", || Action::ToggleSpotlight),
     ("anneau", || Action::ToggleRing),
@@ -100,6 +103,8 @@ pub const CLI_ACTIONS: [(&str, fn() -> Action); 15] = [
     ("capture", || Action::Screenshot),
     ("barre", || Action::ToggleToolbar),
     ("video", || Action::ToggleRecord),
+    ("touches", || Action::ToggleKeys),
+    ("session", || Action::NewSession),
 ];
 
 /// Code (1-based) d'une action nommée, pour [`signal_running_instance`].
@@ -325,6 +330,7 @@ unsafe fn show_menu(hwnd: HWND) {
     append(menu, ID_CLICKS, &hk_label("Effets de clic", cfg.hotkeys.toggle_clicks), cfg.clicks.enabled, true);
     append(menu, ID_SOUND, "Son de clic", cfg.clicks.sound, cfg.clicks.enabled);
     append(menu, ID_TRAIL, &hk_label("Traînée du curseur", cfg.hotkeys.toggle_trail), cfg.trail.enabled, true);
+    append(menu, ID_KEYS, &hk_label("Afficher les touches", cfg.hotkeys.toggle_keys), cfg.keys.enabled, true);
     let _ = AppendMenuW(menu, MF_SEPARATOR, 0, None);
     let modes = &SHARED.get().unwrap().modes;
     append(menu, ID_LASER, &hk_label("Pointeur laser", cfg.hotkeys.toggle_laser), modes.laser.load(Ordering::Acquire), true);
@@ -335,6 +341,11 @@ unsafe fn show_menu(hwnd: HWND) {
     append(menu, ID_RECORD, &hk_label(rec_label, cfg.hotkeys.toggle_record), modes.recording.load(Ordering::Acquire), true);
     append(menu, ID_TOOLBAR, &hk_label("Barre d'outils", cfg.hotkeys.toggle_toolbar), cfg.toolbar.visible, true);
     let _ = AppendMenuW(menu, MF_SEPARATOR, 0, None);
+    if cfg.session.enabled {
+        append(menu, ID_NEW_SESSION, "Nouvelle session", false, true);
+        append(menu, ID_OPEN_SESSION, "Ouvrir le dossier de la session", false, true);
+        let _ = AppendMenuW(menu, MF_SEPARATOR, 0, None);
+    }
     append(menu, ID_OPEN_DIR, "Ouvrir le dossier de configuration", false, true);
     append(menu, ID_RELOAD, "Recharger la configuration", false, true);
     let _ = AppendMenuW(menu, MF_SEPARATOR, 0, None);
@@ -374,6 +385,9 @@ unsafe fn show_menu(hwnd: HWND) {
         ID_CAPTURE => fx_bus::action(Action::Screenshot),
         ID_RECORD => fx_bus::action(Action::ToggleRecord),
         ID_TOOLBAR => fx_bus::action(Action::ToggleToolbar),
+        ID_KEYS => fx_bus::action(Action::ToggleKeys),
+        ID_NEW_SESSION => fx_bus::action(Action::NewSession),
+        ID_OPEN_SESSION => fx_bus::action(Action::OpenSessionFolder),
         ID_RELOAD => fx_bus::action(Action::ReloadConfig),
         ID_OPEN_DIR => open_data_dir(),
         ID_QUIT => {

@@ -3,7 +3,7 @@
 
 use crate::draw::{d2d, ellipse, Frame};
 use crate::gpu::{Gpu, Surface};
-use fx_core::{Color, DrawTool, Shape};
+use fx_core::{Color, DrawTool, KeysCfg, KeysPosition, Shape};
 use windows::core::{w, Result};
 use windows::Win32::Graphics::Direct2D::Common::*;
 use windows::Win32::Graphics::Direct2D::*;
@@ -277,6 +277,95 @@ pub unsafe fn draw_banner(gpu: &Gpu, s: &Surface, text: &str, alpha: f32) -> Res
     dc.DrawRoundedRectangle(&rr, &gpu.brush, 1.0 * k, None);
     gpu.brush.SetColor(&D2D1_COLOR_F { r: 1.0, g: 1.0, b: 1.0, a: alpha });
     dc.DrawTextLayout(v(left + pad_x, top + pad_y), &layout, &gpu.brush, D2D1_DRAW_TEXT_OPTIONS_NONE);
+    Ok(())
+}
+
+// ---------------------------------------------------------------- Touches pressées
+
+/// Touches en bas de l'écran, façon touches de clavier : « Ctrl + Maj + C », ou la suite
+/// des touches tapées. Un panneau sombre derrière les garde lisibles sur tout fond.
+pub unsafe fn draw_keys(gpu: &Gpu, s: &Surface, cfg: &KeysCfg, parts: &[String], combo: bool, count: u32, alpha: f32) -> Result<()> {
+    if parts.is_empty() || alpha <= 0.0 {
+        return Ok(());
+    }
+    let k = s.scale;
+    let size = cfg.size * k;
+    let text_format = |weight, px: f32| {
+        gpu.dwrite.CreateTextFormat(w!("Segoe UI"), None, weight, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL, px, w!("fr-FR"))
+    };
+    let key_fmt = text_format(DWRITE_FONT_WEIGHT_SEMI_BOLD, size)?;
+    let sep_fmt = text_format(DWRITE_FONT_WEIGHT_NORMAL, size * 0.85)?;
+    let measure = |text: &str, fmt: &IDWriteTextFormat| -> Result<(IDWriteTextLayout, f32, f32)> {
+        let wide: Vec<u16> = text.encode_utf16().collect();
+        let layout = gpu.dwrite.CreateTextLayout(&wide, fmt, s.width(), size * 3.0)?;
+        let mut m = DWRITE_TEXT_METRICS::default();
+        layout.GetMetrics(&mut m)?;
+        Ok((layout, m.widthIncludingTrailingWhitespace, m.height))
+    };
+
+    let (pad_x, pad_y) = (size * 0.5, size * 0.28);
+    let gap = size * 0.28;
+    let caps: Vec<_> = parts.iter().map(|p| measure(p, &key_fmt)).collect::<Result<_>>()?;
+    let plus = measure("+", &sep_fmt)?;
+    let times = if count > 1 { Some(measure(&format!("×{count}"), &sep_fmt)?) } else { None };
+
+    let cap_h = caps.iter().map(|c| c.2).fold(0.0f32, f32::max) + 2.0 * pad_y;
+    let cap_w = |c: &(IDWriteTextLayout, f32, f32)| (c.1 + 2.0 * pad_x).max(cap_h);
+    let sep_w = if combo { plus.1 + 2.0 * gap } else { gap };
+    let mut total = caps.iter().map(cap_w).sum::<f32>() + sep_w * (caps.len() as f32 - 1.0);
+    if let Some(t) = &times {
+        total += gap * 2.0 + t.1;
+    }
+
+    let margin = 32.0 * k;
+    let panel_pad = size * 0.45;
+    let panel_w = total + 2.0 * panel_pad;
+    let panel_h = cap_h + 2.0 * panel_pad;
+    let left = match cfg.position {
+        KeysPosition::Left => margin,
+        KeysPosition::Center => (s.width() - panel_w) / 2.0,
+        KeysPosition::Right => s.width() - margin - panel_w,
+    }
+    .max(4.0 * k);
+    // Au-dessus de la barre des tâches.
+    let top = s.height() - 84.0 * k - panel_h;
+
+    let dc = &gpu.dc;
+    let panel = D2D1_ROUNDED_RECT {
+        rect: D2D_RECT_F { left, top, right: left + panel_w, bottom: top + panel_h },
+        radiusX: size * 0.55,
+        radiusY: size * 0.55,
+    };
+    gpu.brush.SetColor(&d2d(Color::rgba8(18, 18, 22, 255).with_alpha(0.78 * alpha)));
+    dc.FillRoundedRectangle(&panel, &gpu.brush);
+
+    let mut x = left + panel_pad;
+    let y = top + panel_pad;
+    for (i, c) in caps.iter().enumerate() {
+        if i > 0 {
+            if combo {
+                gpu.brush.SetColor(&D2D1_COLOR_F { r: 1.0, g: 1.0, b: 1.0, a: 0.85 * alpha });
+                dc.DrawTextLayout(v(x + gap, y + (cap_h - plus.2) / 2.0), &plus.0, &gpu.brush, D2D1_DRAW_TEXT_OPTIONS_NONE);
+            }
+            x += sep_w;
+        }
+        let w_ = cap_w(c);
+        let r = size * 0.22;
+        // Ombre basse (épaisseur de la touche), puis dessus clair.
+        let shadow = D2D1_ROUNDED_RECT { rect: D2D_RECT_F { left: x, top: y + 3.0 * k, right: x + w_, bottom: y + cap_h }, radiusX: r, radiusY: r };
+        gpu.brush.SetColor(&D2D1_COLOR_F { r: 0.62, g: 0.64, b: 0.68, a: alpha });
+        dc.FillRoundedRectangle(&shadow, &gpu.brush);
+        let face = D2D1_ROUNDED_RECT { rect: D2D_RECT_F { left: x, top: y, right: x + w_, bottom: y + cap_h - 3.0 * k }, radiusX: r, radiusY: r };
+        gpu.brush.SetColor(&D2D1_COLOR_F { r: 0.97, g: 0.97, b: 0.98, a: alpha });
+        dc.FillRoundedRectangle(&face, &gpu.brush);
+        gpu.brush.SetColor(&D2D1_COLOR_F { r: 0.09, g: 0.09, b: 0.11, a: alpha });
+        dc.DrawTextLayout(v(x + (w_ - c.1) / 2.0, y + (cap_h - 3.0 * k - c.2) / 2.0), &c.0, &gpu.brush, D2D1_DRAW_TEXT_OPTIONS_NONE);
+        x += w_;
+    }
+    if let Some(t) = &times {
+        gpu.brush.SetColor(&D2D1_COLOR_F { r: 1.0, g: 0.77, b: 0.0, a: alpha });
+        dc.DrawTextLayout(v(x + gap * 2.0, y + (cap_h - t.2) / 2.0), &t.0, &gpu.brush, D2D1_DRAW_TEXT_OPTIONS_NONE);
+    }
     Ok(())
 }
 

@@ -54,6 +54,7 @@ enum Btn {
     Capture,
     Laser,
     Spot,
+    Keys,
     Settings,
     Hide,
 }
@@ -75,6 +76,7 @@ impl Btn {
             Btn::Capture => "Capture",
             Btn::Laser => "Laser",
             Btn::Spot => "Spot",
+            Btn::Keys => "Touches",
             Btn::Settings => "Réglages",
             Btn::Hide => "Masquer",
         }
@@ -97,6 +99,7 @@ impl Btn {
             Btn::Capture => Action::Screenshot,
             Btn::Laser => Action::ToggleLaser,
             Btn::Spot => Action::ToggleSpotlight,
+            Btn::Keys => Action::ToggleKeys,
             Btn::Settings => Action::OpenSettings,
             Btn::Hide => Action::ToggleToolbar,
         }
@@ -143,8 +146,7 @@ fn layout() -> (Vec<(Hit, D2D_RECT_F)>, Vec<f32>, f32) {
     seps.push(y + SEP_H / 2.0);
     y += SEP_H;
     pair(&mut items, &mut y, Btn::Record, Btn::Capture);
-    items.push((Hit::Btn(Btn::Settings), rect(PAD, y, W - PAD, y + BTN_H)));
-    y += BTN_H;
+    pair(&mut items, &mut y, Btn::Keys, Btn::Settings);
     y += PAD;
     (items, seps, y)
 }
@@ -266,7 +268,7 @@ fn signature(tb: &Toolbar, cfg: &Config, v: &View) -> u64 {
     let mut h = std::collections::hash_map::DefaultHasher::new();
     (tb.hover, tb.pressed, tb.scale.to_bits(), v.draw_mode, v.tool as u8, v.color_index, v.width.to_bits()).hash(&mut h);
     (v.laser, v.board, cfg.spotlight.mode as u8, cfg.spotlight.shape as u8).hash(&mut h);
-    (v.recording, v.rec_secs, v.countdown).hash(&mut h);
+    (v.recording, v.rec_secs, v.countdown, cfg.keys.enabled, cfg.session.enabled).hash(&mut h);
     for c in &cfg.draw.colors {
         c.to_hex().hash(&mut h);
     }
@@ -410,6 +412,7 @@ fn is_active(b: Btn, cfg: &Config, v: &View) -> bool {
         Btn::Record => v.recording || v.countdown,
         Btn::Laser => v.laser,
         Btn::Spot => cfg.spotlight.mode != SpotlightMode::Off,
+        Btn::Keys => cfg.keys.enabled,
         _ => false,
     }
 }
@@ -646,6 +649,18 @@ unsafe fn draw_icon(gpu: &Gpu, b: Btn, cx: f32, cy: f32, cfg: &Config, view: &Vi
             }
             dc.DrawRectangle(&frame, br, 1.2, st);
         }
+        Btn::Keys => {
+            // Touche de clavier vue de face, avec un petit « K ».
+            let key = D2D1_ROUNDED_RECT {
+                rect: D2D_RECT_F { left: cx - 8.5, top: cy - 7.5, right: cx + 8.5, bottom: cy + 7.5 },
+                radiusX: 3.0,
+                radiusY: 3.0,
+            };
+            dc.DrawRoundedRectangle(&key, br, lw, st);
+            line((-2.5, -4.0), (-2.5, 3.0), 1.6);
+            line((-2.5, -0.2), (3.0, -4.0), 1.6);
+            line((-1.0, -1.2), (3.0, 3.0), 1.6);
+        }
         Btn::Settings => {
             for (i, k) in [(-5.0f32, -3.0f32), (0.0, 3.5), (5.0, -1.0)] {
                 line((-8.0, i), (8.0, i), lw);
@@ -858,7 +873,7 @@ unsafe fn record_click(hwnd: HWND) {
     add(4, "Son du PC", cfg.record.system_audio);
     add(5, "Micro", cfg.record.mic);
     let _ = AppendMenuW(menu, MF_SEPARATOR, 0, None);
-    add(6, "Ouvrir le dossier des vidéos", false);
+    add(6, if cfg.session.enabled { "Ouvrir le dossier de la session" } else { "Ouvrir le dossier des vidéos" }, false);
 
     let mut pt = POINT::default();
     let _ = GetCursorPos(&mut pt);

@@ -3,7 +3,9 @@
 
 mod capture;
 mod engine;
+mod keys;
 mod recorder;
+mod session;
 mod settings;
 mod tray;
 
@@ -71,6 +73,8 @@ fn main() {
             settings::get_config,
             settings::default_config,
             settings::set_config,
+            settings::run_action,
+            settings::session_info,
             settings::open_data_dir,
             settings::data_dir,
         ])

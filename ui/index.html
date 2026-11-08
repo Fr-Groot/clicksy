@@ -20,6 +20,7 @@
       <a href="#spotlight">Spotlight</a>
       <a href="#ring">Anneau</a>
       <a href="#clicks">Clics</a>
+      <a href="#keys">Touches</a>
       <a href="#trail">Traînée &amp; laser</a>
       <a href="#draw">Dessin</a>
       <a href="#hotkeys">Raccourcis</a>
@@ -62,10 +63,25 @@
         </div>
       </div>
 
+      <h2>Sessions</h2>
+      <div class="card">
+        <div class="row">
+          <div class="row-text"><strong>Ranger chaque session dans un dossier</strong><span>Captures, images du tableau et vidéos d'une même séance vont dans un seul dossier, par exemple <span class="mono">Documents › Clicksy › 2026-11-08 14h30</span>. Une nouvelle session commence au lancement de Clicksy et chaque jour. Désactivé : captures dans Images › Clicksy et vidéos dans Vidéos › Clicksy.</span></div>
+          <label class="switch"><input type="checkbox" data-path="session.enabled"><span class="track"></span></label>
+        </div>
+        <div class="row">
+          <div class="row-text"><strong>Session en cours</strong><span id="session-dir" class="mono">…</span></div>
+          <div class="btns">
+            <button class="btn" id="new-session">Nouvelle session</button>
+            <button class="btn" id="open-session">Ouvrir</button>
+          </div>
+        </div>
+      </div>
+
       <h2>Capture d'écran</h2>
       <div class="card">
         <div class="row">
-          <div class="row-text"><strong>Copier aussi dans le presse-papiers</strong><span>Raccourci : <kbd data-hk="screenshot"></kbd>. Capture l'écran où se trouve la souris, effets compris, dans Images\Clicksy.</span></div>
+          <div class="row-text"><strong>Copier aussi dans le presse-papiers</strong><span>Raccourci : <kbd data-hk="screenshot"></kbd>. Capture l'écran où se trouve la souris, effets compris, dans le dossier de la session.</span></div>
           <label class="switch"><input type="checkbox" data-path="capture.copy_to_clipboard"><span class="track"></span></label>
         </div>
       </div>
@@ -82,7 +98,7 @@
         </div>
       </div>
 
-      <p class="note">Clicksy ne fait aucun appel réseau et n'envoie aucune donnée. Les touches tapées ne sont jamais enregistrées.</p>
+      <p class="note">Clicksy ne fait aucun appel réseau et n'envoie aucune donnée. Les touches tapées ne sont jamais enregistrées : l'affichage des touches les montre quelques secondes, puis les oublie.</p>
     </section>
 
     <section id="spotlight" class="page">
@@ -207,6 +223,45 @@
       </div>
     </section>
 
+    <section id="keys" class="page">
+      <h1>Touches</h1>
+      <p class="lead">Affiche en bas de l'écran les raccourcis que tu utilises (<kbd>Ctrl</kbd> + <kbd>C</kbd>, <kbd>Alt</kbd> + <kbd>Tab</kbd>, <kbd>Maj</kbd> + clic…) : idéal pour un tuto informatique.</p>
+      <div class="card">
+        <div class="row">
+          <div class="row-text"><strong>Afficher les touches</strong><span>Raccourci : <kbd data-hk="toggle_keys"></kbd>, ou le bouton « Touches » de la barre d'outils.</span></div>
+          <label class="switch"><input type="checkbox" data-path="keys.enabled"><span class="track"></span></label>
+        </div>
+        <div class="row stack">
+          <div class="row-text"><strong>Quelles touches</strong><span>Raccourcis seulement : combinaisons avec <kbd>Ctrl</kbd>, <kbd>Alt</kbd> ou <kbd>Win</kbd>, touches F1 à F12, Échap. Le texte tapé n'apparaît pas. Toutes les touches : le texte aussi, sauf dans les champs mot de passe (« Saisie masquée »).</span></div>
+          <div class="segmented" data-path="keys.all_keys" data-bool>
+            <button data-value="false">Raccourcis seulement</button>
+            <button data-value="true">Toutes les touches</button>
+          </div>
+        </div>
+        <div class="row">
+          <div class="row-text"><strong>Clics avec une touche</strong><span>« Maj + Clic gauche », « Ctrl + Molette ↑ »…</span></div>
+          <label class="switch"><input type="checkbox" data-path="keys.mouse"><span class="track"></span></label>
+        </div>
+        <div class="row stack">
+          <div class="row-text"><strong>Position</strong><span>En bas de l'écran où se trouve la souris.</span></div>
+          <div class="segmented" data-path="keys.position">
+            <button data-value="Left">À gauche</button>
+            <button data-value="Center">Au centre</button>
+            <button data-value="Right">À droite</button>
+          </div>
+        </div>
+        <div class="row">
+          <div class="row-text"><strong>Taille</strong></div>
+          <div class="slider"><input type="range" min="14" max="40" step="1" data-path="keys.size"><output></output></div>
+        </div>
+        <div class="row">
+          <div class="row-text"><strong>Durée d'affichage</strong></div>
+          <div class="slider"><input type="range" min="600" max="5000" step="100" data-path="keys.duration_ms" data-unit="ms"><output></output></div>
+        </div>
+      </div>
+      <p class="note">Les raccourcis de Clicksy eux-mêmes ne s'affichent pas. Sur un clavier AZERTY, <kbd>AltGr</kbd> (pour @, #, €…) n'est pas pris pour un raccourci.</p>
+    </section>
+
     <section id="trail" class="page">
       <h1>Traînée &amp; laser</h1>
       <p class="lead">Une trace qui suit le curseur puis s'efface : le regard suit le mouvement sans effort.</p>
@@ -295,6 +350,10 @@
           <div class="row-text"><strong>Effacer en quittant le mode dessin</strong><span>Sinon, les dessins restent affichés jusqu'au prochain Échap.</span></div>
           <label class="switch"><input type="checkbox" data-path="draw.clear_on_exit"><span class="track"></span></label>
         </div>
+        <div class="row">
+          <div class="row-text"><strong>Garder une image du tableau</strong><span>Quand tu effaces ou fermes le tableau blanc ou noir, son contenu est enregistré en image dans le dossier de la session.</span></div>
+          <label class="switch"><input type="checkbox" data-path="draw.save_board"><span class="track"></span></label>
+        </div>
       </div>
     </section>
 
@@ -346,6 +405,10 @@
           <div class="row-text"><strong>Enregistrer / arrêter la vidéo</strong></div>
           <input class="hotkey" data-path="hotkeys.toggle_record" readonly>
         </div>
+        <div class="row">
+          <div class="row-text"><strong>Afficher les touches</strong></div>
+          <input class="hotkey" data-path="hotkeys.toggle_keys" readonly>
+        </div>
       </div>
       <p class="warn" id="hk-warn" hidden></p>
       <p class="note">Conseil : garde <kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>Maj</kbd>. Sur un clavier AZERTY, <kbd>Ctrl</kbd> + <kbd>Alt</kbd> seul équivaut à <kbd>AltGr</kbd> et peut bloquer des caractères comme @ ou #.</p>
@@ -364,6 +427,7 @@
           <div class="row-text"><strong>Incruster la souris et les effets dans la vidéo</strong><span>Activé : la vidéo montre ce que tu vois (souris, anneau, clics, dessins, spotlight…), prête à partager. Désactivé : vidéo « propre », sans souris ni effets, pour les régler après coup dans l'éditeur (prochaine version). La barre d'outils n'apparaît jamais dans la vidéo.</span></div>
           <label class="switch"><input type="checkbox" data-path="record.burn_effects"><span class="track"></span></label>
         </div>
+      </div>
       <div class="card">
         <div class="row">
           <div class="row-text"><strong>Son du PC</strong><span>Ce que jouent les applications (vidéo, alertes…).</span></div>
@@ -385,7 +449,7 @@
           <label class="switch"><input type="checkbox" data-path="record.countdown"><span class="track"></span></label>
         </div>
         <div class="row">
-          <div class="row-text"><strong>Ouvrir le dossier à la fin</strong><span>Chaque enregistrement crée un dossier dans Vidéos &rsaquo; Clicksy.</span></div>
+          <div class="row-text"><strong>Ouvrir le dossier à la fin</strong><span>Chaque enregistrement crée un dossier « Vidéo » dans le dossier de la session (ou dans Vidéos &rsaquo; Clicksy si les sessions sont désactivées).</span></div>
           <label class="switch"><input type="checkbox" data-path="record.open_folder_after"><span class="track"></span></label>
         </div>
       </div>

@@ -142,15 +142,18 @@ pub fn go(shared: &Arc<Shared>, target: RecordTarget) {
     shared.wake();
     std::thread::sleep(Duration::from_millis(120));
 
-    let opts = fx_record::Options {
-        target: fx_target,
-        fps: cfg.record.fps,
-        system_audio: cfg.record.system_audio,
-        mic: cfg.record.mic,
-        cursor: burn,
-        folder: videos_dir(shared),
-    };
-    match fx_record::Recording::start(opts) {
+    let started = crate::session::video_place(shared).and_then(|(folder, name)| {
+        fx_record::Recording::start(fx_record::Options {
+            target: fx_target,
+            fps: cfg.record.fps,
+            system_audio: cfg.record.system_audio,
+            mic: cfg.record.mic,
+            cursor: burn,
+            folder,
+            name: Some(name),
+        })
+    });
+    match started {
         Ok(rec) => {
             *RECORDING.lock().unwrap() = Some(rec);
             // En mode incrusté, un cadre rouge sur le bord de l'écran filmé apparaîtrait dans la vidéo :

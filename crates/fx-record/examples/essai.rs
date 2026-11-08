@@ -14,6 +14,7 @@ fn main() {
         mic: true,
         cursor: true,
         folder: folder.into(),
+        name: None,
     })
     .expect("démarrage");
     std::thread::sleep(std::time::Duration::from_secs(5));
