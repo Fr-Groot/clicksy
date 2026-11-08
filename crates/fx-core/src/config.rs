@@ -19,6 +19,8 @@ pub struct Config {
     pub laser: LaserCfg,
     /// Bulle de confirmation en haut de l'écran quand on utilise un raccourci.
     pub show_banner: bool,
+    pub toolbar: ToolbarCfg,
+    pub capture: CaptureCfg,
     pub hotkeys: HotkeysCfg,
 }
 
@@ -66,6 +68,32 @@ pub struct TrailCfg {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]
+pub struct ToolbarCfg {
+    pub visible: bool,
+    /// Invisible dans les captures d'écran, enregistrements et partages (Teams, Zoom…).
+    pub hide_from_capture: bool,
+    /// Position du coin haut-gauche (pixels physiques) ; absent = bord droit de l'écran principal.
+    pub x: Option<i32>,
+    pub y: Option<i32>,
+}
+
+impl Default for ToolbarCfg {
+    fn default() -> Self {
+        ToolbarCfg { visible: true, hide_from_capture: true, x: None, y: None }
+    }
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(default)]
+pub struct CaptureCfg {
+    /// Dossier des captures ; vide = Images\Clicksy.
+    pub folder: String,
+    /// Copier aussi la capture dans le presse-papiers.
+    pub copy_to_clipboard: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
 pub struct LaserCfg {
     pub color: Color,
     /// Rayon du point (DIP).
@@ -76,7 +104,10 @@ pub struct LaserCfg {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]
 pub struct SpotlightCfg {
+    /// Affiché en ce moment : `Off`, ou la forme `shape`.
     pub mode: SpotlightMode,
+    /// Forme choisie dans les réglages (cercle, bande horizontale ou verticale).
+    pub shape: SpotlightMode,
     /// Rayon du cercle (DIP).
     pub radius: f32,
     /// Hauteur (bande horizontale) ou largeur (bande verticale), en DIP.
@@ -130,6 +161,9 @@ pub struct HotkeysCfg {
     pub toggle_draw: Option<Hotkey>,
     pub toggle_laser: Option<Hotkey>,
     pub toggle_trail: Option<Hotkey>,
+    pub toggle_toolbar: Option<Hotkey>,
+    pub cycle_board: Option<Hotkey>,
+    pub screenshot: Option<Hotkey>,
 }
 
 impl Default for DrawCfg {
@@ -171,6 +205,8 @@ impl Default for Config {
             trail: TrailCfg::default(),
             laser: LaserCfg::default(),
             show_banner: true,
+            toolbar: ToolbarCfg::default(),
+            capture: CaptureCfg { folder: String::new(), copy_to_clipboard: true },
             hotkeys: HotkeysCfg::default(),
         }
     }
@@ -180,6 +216,7 @@ impl Default for SpotlightCfg {
     fn default() -> Self {
         SpotlightCfg {
             mode: SpotlightMode::Off,
+            shape: SpotlightMode::Circle,
             radius: 140.0,
             band_size: 160.0,
             dim: 0.55,
@@ -230,6 +267,9 @@ impl Default for HotkeysCfg {
             toggle_draw: Hotkey::parse("Ctrl+Alt+Maj+D"),
             toggle_laser: Hotkey::parse("Ctrl+Alt+Maj+L"),
             toggle_trail: Hotkey::parse("Ctrl+Alt+Maj+T"),
+            toggle_toolbar: Hotkey::parse("Ctrl+Alt+Maj+O"),
+            cycle_board: Hotkey::parse("Ctrl+Alt+Maj+W"),
+            screenshot: Hotkey::parse("Ctrl+Alt+Maj+P"),
         }
     }
 }
@@ -238,6 +278,13 @@ impl Config {
     /// Ramène les valeurs saisies à la main dans des bornes raisonnables.
     pub fn sanitize(&mut self) {
         let s = &mut self.spotlight;
+        // La forme n'est jamais « désactivé » ; un spotlight allumé utilise toujours la forme choisie.
+        if s.shape == SpotlightMode::Off {
+            s.shape = SpotlightMode::Circle;
+        }
+        if s.mode != SpotlightMode::Off {
+            s.shape = s.mode;
+        }
         s.radius = s.radius.clamp(20.0, 2000.0);
         s.band_size = s.band_size.clamp(20.0, 2000.0);
         s.dim = s.dim.clamp(0.0, 1.0);

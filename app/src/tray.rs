@@ -31,6 +31,9 @@ const ID_SOUND: usize = 31;
 const ID_TRAIL: usize = 32;
 const ID_LASER: usize = 33;
 const ID_DRAW: usize = 34;
+const ID_TOOLBAR: usize = 35;
+const ID_BOARD: usize = 36;
+const ID_CAPTURE: usize = 37;
 const ID_OPEN_DIR: usize = 40;
 const ID_RELOAD: usize = 41;
 const ID_QUIT: usize = 99;
@@ -80,9 +83,9 @@ pub fn shutdown() {
 
 /// Actions déclenchables en ligne de commande (`clicksy.exe --action dessin`),
 /// par exemple depuis un Stream Deck ou un script. 0 = ouvrir les réglages.
-pub const CLI_ACTIONS: [(&str, fn() -> Action); 9] = [
+pub const CLI_ACTIONS: [(&str, fn() -> Action); 14] = [
     ("tout", || Action::ToggleAll),
-    ("spotlight", || Action::CycleSpotlight),
+    ("spotlight", || Action::ToggleSpotlight),
     ("anneau", || Action::ToggleRing),
     ("clics", || Action::ToggleClicks),
     ("trainee", || Action::ToggleTrail),
@@ -90,6 +93,11 @@ pub const CLI_ACTIONS: [(&str, fn() -> Action); 9] = [
     ("dessin", || Action::ToggleDraw),
     ("pulsation", || Action::TogglePulse),
     ("son", || Action::ToggleClickSound),
+    ("tableau", || Action::CycleBoard),
+    ("blanc", || Action::SetBoard(1)),
+    ("noir", || Action::SetBoard(2)),
+    ("capture", || Action::Screenshot),
+    ("barre", || Action::ToggleToolbar),
 ];
 
 /// Code (1-based) d'une action nommée, pour [`signal_running_instance`].
@@ -319,6 +327,9 @@ unsafe fn show_menu(hwnd: HWND) {
     let modes = &SHARED.get().unwrap().modes;
     append(menu, ID_LASER, &hk_label("Pointeur laser", cfg.hotkeys.toggle_laser), modes.laser.load(Ordering::Acquire), true);
     append(menu, ID_DRAW, &hk_label("Mode dessin", cfg.hotkeys.toggle_draw), modes.draw.load(Ordering::Acquire), true);
+    append(menu, ID_BOARD, &hk_label("Tableau blanc / noir", cfg.hotkeys.cycle_board), modes.board.load(Ordering::Acquire) != 0, true);
+    append(menu, ID_CAPTURE, &hk_label("Capture d'écran", cfg.hotkeys.screenshot), false, true);
+    append(menu, ID_TOOLBAR, &hk_label("Barre d'outils", cfg.hotkeys.toggle_toolbar), cfg.toolbar.visible, true);
     let _ = AppendMenuW(menu, MF_SEPARATOR, 0, None);
     append(menu, ID_OPEN_DIR, "Ouvrir le dossier de configuration", false, true);
     append(menu, ID_RELOAD, "Recharger la configuration", false, true);
@@ -355,6 +366,9 @@ unsafe fn show_menu(hwnd: HWND) {
         ID_TRAIL => fx_bus::action(Action::ToggleTrail),
         ID_LASER => fx_bus::action(Action::ToggleLaser),
         ID_DRAW => fx_bus::action(Action::ToggleDraw),
+        ID_BOARD => fx_bus::action(Action::CycleBoard),
+        ID_CAPTURE => fx_bus::action(Action::Screenshot),
+        ID_TOOLBAR => fx_bus::action(Action::ToggleToolbar),
         ID_RELOAD => fx_bus::action(Action::ReloadConfig),
         ID_OPEN_DIR => open_data_dir(),
         ID_QUIT => {

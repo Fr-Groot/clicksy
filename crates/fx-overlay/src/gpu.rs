@@ -74,6 +74,50 @@ unsafe fn create_d3d(driver: D3D_DRIVER_TYPE) -> Result<ID3D11Device> {
     Ok(device.unwrap())
 }
 
+/// Chaîne d'échange + cible Direct2D + arbre DirectComposition attachés à une fenêtre.
+pub struct Layer {
+    pub swapchain: IDXGISwapChain1,
+    pub target: ID2D1Bitmap1,
+    _dcomp_target: IDCompositionTarget,
+    _visual: IDCompositionVisual,
+}
+
+impl Layer {
+    pub fn new(gpu: &Gpu, hwnd: HWND, w: u32, h: u32) -> Result<Self> {
+        unsafe {
+            let desc = DXGI_SWAP_CHAIN_DESC1 {
+                Width: w.max(1),
+                Height: h.max(1),
+                Format: DXGI_FORMAT_B8G8R8A8_UNORM,
+                Stereo: false.into(),
+                SampleDesc: DXGI_SAMPLE_DESC { Count: 1, Quality: 0 },
+                BufferUsage: DXGI_USAGE_RENDER_TARGET_OUTPUT,
+                BufferCount: 2,
+                Scaling: DXGI_SCALING_STRETCH,
+                SwapEffect: DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL,
+                AlphaMode: DXGI_ALPHA_MODE_PREMULTIPLIED,
+                Flags: 0,
+            };
+            let swapchain = gpu.dxgi_factory.CreateSwapChainForComposition(&gpu.d3d, &desc, None)?;
+            let surface: IDXGISurface = swapchain.GetBuffer(0)?;
+            let props = D2D1_BITMAP_PROPERTIES1 {
+                pixelFormat: D2D1_PIXEL_FORMAT { format: DXGI_FORMAT_B8G8R8A8_UNORM, alphaMode: D2D1_ALPHA_MODE_PREMULTIPLIED },
+                dpiX: 96.0,
+                dpiY: 96.0,
+                bitmapOptions: D2D1_BITMAP_OPTIONS_TARGET | D2D1_BITMAP_OPTIONS_CANNOT_DRAW,
+                colorContext: std::mem::ManuallyDrop::new(None),
+            };
+            let target = gpu.dc.CreateBitmapFromDxgiSurface(&surface, Some(&props))?;
+            let dcomp_target = gpu.dcomp.CreateTargetForHwnd(hwnd, true)?;
+            let visual = gpu.dcomp.CreateVisual()?;
+            visual.SetContent(&swapchain)?;
+            dcomp_target.SetRoot(&visual)?;
+            gpu.dcomp.Commit()?;
+            Ok(Layer { swapchain, target, _dcomp_target: dcomp_target, _visual: visual })
+        }
+    }
+}
+
 /// Une fenêtre de surcouche couvrant exactement un écran.
 pub struct Surface {
     pub hwnd: HWND,

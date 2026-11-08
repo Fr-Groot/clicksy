@@ -4,7 +4,7 @@ use crate::{Color, Config, DrawTool};
 use arc_swap::ArcSwap;
 use fx_bus::MouseButton;
 use std::path::PathBuf;
-use std::sync::atomic::AtomicBool;
+use std::sync::atomic::{AtomicBool, AtomicI32, AtomicU8, Ordering};
 use std::sync::{Arc, Mutex, OnceLock};
 use std::time::Instant;
 
@@ -44,13 +44,23 @@ pub struct DrawState {
     pub width: f32,
     pub shapes: Vec<Shape>,
     pub current: Option<Shape>,
+    /// Dessins de l'écran mis de côté pendant que le tableau est ouvert (et inversement).
+    pub stash: Vec<Shape>,
     /// Incrémenté à chaque modification des formes (le rendu sait quand redessiner).
     pub generation: u64,
 }
 
 impl Default for DrawState {
     fn default() -> Self {
-        DrawState { tool: DrawTool::Pen, color_index: 0, width: 5.0, shapes: Vec::new(), current: None, generation: 0 }
+        DrawState {
+            tool: DrawTool::Pen,
+            color_index: 0,
+            width: 5.0,
+            shapes: Vec::new(),
+            current: None,
+            stash: Vec::new(),
+            generation: 0,
+        }
     }
 }
 
@@ -68,6 +78,33 @@ pub struct FxState {
 pub struct Modes {
     pub draw: AtomicBool,
     pub laser: AtomicBool,
+    /// Tableau plein écran : 0 aucun, 1 blanc, 2 noir.
+    pub board: AtomicU8,
+    /// Un point de l'écran qui affiche le tableau (position du curseur à l'ouverture).
+    pub board_x: AtomicI32,
+    pub board_y: AtomicI32,
+    /// Rectangle de la barre d'outils (gauche, haut, droite, bas ; pixels physiques), vide si masquée.
+    pub toolbar_rect: [AtomicI32; 4],
+    /// La barre d'outils suit la souris (déplacement en cours).
+    pub toolbar_drag: AtomicBool,
+}
+
+impl Modes {
+    pub fn set_toolbar_rect(&self, r: Option<(i32, i32, i32, i32)>) {
+        let (l, t, rr, b) = r.unwrap_or((0, 0, 0, 0));
+        for (a, v) in self.toolbar_rect.iter().zip([l, t, rr, b]) {
+            a.store(v, Ordering::Release);
+        }
+    }
+
+    /// Le point est-il sur la barre d'outils (ou la barre est-elle en cours de déplacement) ?
+    pub fn on_toolbar(&self, x: i32, y: i32) -> bool {
+        if self.toolbar_drag.load(Ordering::Acquire) {
+            return true;
+        }
+        let r: Vec<i32> = self.toolbar_rect.iter().map(|a| a.load(Ordering::Acquire)).collect();
+        x >= r[0] && x < r[2] && y >= r[1] && y < r[3]
+    }
 }
 
 pub struct Shared {

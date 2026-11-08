@@ -7,6 +7,7 @@
 mod annot;
 mod draw;
 mod gpu;
+mod toolbar;
 
 use fx_core::{Config, Shape, Shared};
 use std::collections::VecDeque;
@@ -59,6 +60,7 @@ unsafe fn render_thread(shared: Arc<Shared>) {
     });
 
     register_class();
+    toolbar::register(shared.clone());
     // Remet la surcouche au premier plan à chaque changement de fenêtre active
     // (diaporama PowerPoint, applis qui se mettent elles-mêmes « topmost »...).
     let foreground_hook = SetWinEventHook(
@@ -93,6 +95,7 @@ unsafe fn render_thread(shared: Arc<Shared>) {
 
         // 2. (Re)création du GPU et des surfaces si nécessaire.
         if needs_rebuild {
+            toolbar::destroy(&shared);
             surfaces.clear();
             if gpu.is_none() {
                 gpu = Gpu::new().map_err(|e| eprintln!("Clicksy : GPU indisponible : {e}")).ok();
@@ -110,6 +113,7 @@ unsafe fn render_thread(shared: Arc<Shared>) {
         }
         if RAISE.swap(false, Ordering::AcqRel) || last_raise.elapsed() > Duration::from_secs(2) {
             surfaces.iter().for_each(Surface::raise);
+            toolbar::raise();
             last_raise = Instant::now();
         }
 
@@ -128,6 +132,7 @@ unsafe fn render_thread(shared: Arc<Shared>) {
             Err(e) => {
                 // Périphérique perdu (pilote mis à jour, veille...) : on reconstruit tout.
                 eprintln!("Clicksy : erreur de rendu, reconstruction : {e}");
+                toolbar::destroy(&shared);
                 surfaces.clear();
                 gpu = None;
                 needs_rebuild = true;
@@ -140,6 +145,7 @@ unsafe fn render_thread(shared: Arc<Shared>) {
         let _ = MsgWaitForMultipleObjects(Some(&[wake]), false, 2000, QS_ALLINPUT);
     }
 
+    toolbar::destroy(&shared);
     surfaces.clear();
     if !foreground_hook.is_invalid() {
         let _ = UnhookWinEvent(foreground_hook);
@@ -172,12 +178,14 @@ unsafe fn render_frame(
     let now = Instant::now();
     let draw_mode = shared.modes.draw.load(Ordering::Acquire);
     let laser = shared.modes.laser.load(Ordering::Acquire);
+    let board = shared.modes.board.load(Ordering::Acquire);
+    let board_pt = (shared.modes.board_x.load(Ordering::Acquire), shared.modes.board_y.load(Ordering::Acquire));
 
     let mut pt = POINT::default();
     let _ = GetCursorPos(&mut pt);
     let scale = surfaces.iter().find(|s| s.contains(pt.x, pt.y)).map(|s| s.scale).unwrap_or(1.0);
 
-    let (ripples, held, draw_tool, draw_color, banner) = {
+    let (ripples, held, draw_tool, draw_color, banner, color_index, draw_width) = {
         let mut fx = shared.fx.lock().unwrap();
         let dur = Duration::from_millis(cfg.clicks.duration_ms as u64);
         fx.ripples.retain(|r| now.saturating_duration_since(r.start) < dur);
@@ -191,7 +199,7 @@ unsafe fn render_frame(
         }
         let color = cfg.draw.colors[d.color_index.min(2)];
         let banner = fx.banner.as_ref().map(|b| (b.text.clone(), now.saturating_duration_since(b.start).as_secs_f32() * 1000.0));
-        (fx.ripples.clone(), fx.held, d.tool, color, banner)
+        (fx.ripples.clone(), fx.held, d.tool, color, banner, d.color_index, d.width)
     };
     // Fondu d'entrée (120 ms) et de sortie (400 ms) de la bulle.
     let banner = banner.map(|(t, ms)| {
@@ -241,10 +249,12 @@ unsafe fn render_frame(
         laser,
         trail: &trail,
         banner: banner.as_ref().map(|(t, a)| (t.as_str(), *a)),
+        board,
+        board_pt,
     };
 
     // Le contenu « statique » dépend de la config et des formes dessinées.
-    let token = (Arc::as_ptr(&cfg_guard) as usize).wrapping_mul(31).wrapping_add(st.shapes_gen as usize);
+    let token = (Arc::as_ptr(&cfg_guard) as usize).wrapping_mul(31).wrapping_add(st.shapes_gen as usize).wrapping_add((board as usize) << 40);
     let mut presented = false;
     for s in surfaces.iter_mut() {
         let dynamic = draw::is_dynamic(s, &frame);
@@ -257,6 +267,10 @@ unsafe fn render_frame(
         s.shown = want;
         presented = true;
     }
+
+    // Barre d'outils (créée, mise à jour ou masquée selon la config).
+    let view = toolbar::View { draw_mode, tool: draw_tool, color_index, width: draw_width, laser, board };
+    presented |= toolbar::sync(gpu, shared, cfg, &view)?;
 
     let animating = (cfg.enabled && (!ripples.is_empty() || (cfg.ring.enabled && cfg.ring.pulse && !laser && !draw_mode)))
         || trail.len() >= 2

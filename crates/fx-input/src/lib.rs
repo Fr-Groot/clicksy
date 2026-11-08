@@ -109,7 +109,8 @@ unsafe extern "system" fn mouse_proc(code: i32, wparam: WPARAM, lparam: LPARAM) 
                 _ => {}
             }
             // Mode dessin : boutons et molette servent à dessiner, l'app en dessous ne les reçoit pas.
-            if drawing && msg != WM_MOUSEMOVE {
+            // Sauf sur la barre d'outils de Clicksy, qui doit rester cliquable.
+            if drawing && msg != WM_MOUSEMOVE && !ctx.shared.modes.on_toolbar(x, y) {
                 return LRESULT(1);
             }
         }
@@ -179,12 +180,15 @@ fn match_hotkey(ctx: &Ctx, vk: u32) -> Option<Action> {
     let hk = &cfg.hotkeys;
     let table = [
         (hk.toggle_all, Action::ToggleAll),
-        (hk.cycle_spotlight, Action::CycleSpotlight),
+        (hk.cycle_spotlight, Action::ToggleSpotlight),
         (hk.toggle_ring, Action::ToggleRing),
         (hk.toggle_clicks, Action::ToggleClicks),
         (hk.toggle_draw, Action::ToggleDraw),
         (hk.toggle_laser, Action::ToggleLaser),
         (hk.toggle_trail, Action::ToggleTrail),
+        (hk.toggle_toolbar, Action::ToggleToolbar),
+        (hk.cycle_board, Action::CycleBoard),
+        (hk.screenshot, Action::Screenshot),
     ];
     table.into_iter().find(|(h, _)| *h == Some(pressed)).map(|(_, a)| a)
 }

@@ -50,6 +50,26 @@
         </div>
       </div>
 
+      <h2>Barre d'outils</h2>
+      <div class="card">
+        <div class="row">
+          <div class="row-text"><strong>Afficher la barre d'outils</strong><span>Boutons pour dessiner, le tableau, la capture, le laser… Raccourci : <kbd data-hk="toggle_toolbar"></kbd>. Déplace-la par sa poignée ; elle s'aimante aux bords de l'écran.</span></div>
+          <label class="switch"><input type="checkbox" data-path="toolbar.visible"><span class="track"></span></label>
+        </div>
+        <div class="row">
+          <div class="row-text"><strong>Invisible pour les participants</strong><span>Masquée dans les partages d'écran (Teams, Zoom, Meet), les captures et les enregistrements. Toi seul la vois.</span></div>
+          <label class="switch"><input type="checkbox" data-path="toolbar.hide_from_capture"><span class="track"></span></label>
+        </div>
+      </div>
+
+      <h2>Capture d'écran</h2>
+      <div class="card">
+        <div class="row">
+          <div class="row-text"><strong>Copier aussi dans le presse-papiers</strong><span>Raccourci : <kbd data-hk="screenshot"></kbd>. Capture l'écran où se trouve la souris, effets compris, dans Images\Clicksy.</span></div>
+          <label class="switch"><input type="checkbox" data-path="capture.copy_to_clipboard"><span class="track"></span></label>
+        </div>
+      </div>
+
       <h2>Données</h2>
       <div class="card">
         <div class="row">
@@ -70,10 +90,13 @@
       <p class="lead">Assombrit l'écran sauf autour du curseur, pour guider le regard.</p>
 
       <div class="card">
+        <div class="row">
+          <div class="row-text"><strong>Spotlight allumé</strong><span>Raccourci : <kbd data-hk="cycle_spotlight"></kbd>, ou le bouton « Spot » de la barre d'outils. Les deux allument et éteignent la forme choisie ci-dessous.</span></div>
+          <label class="switch"><input type="checkbox" id="spot-on"><span class="track"></span></label>
+        </div>
         <div class="row stack">
-          <div class="row-text"><strong>Forme</strong><span>Raccourci : <kbd data-hk="cycle_spotlight"></kbd> pour passer de l'une à l'autre.</span></div>
-          <div class="segmented" data-path="spotlight.mode">
-            <button data-value="Off">Désactivé</button>
+          <div class="row-text"><strong>Forme</strong></div>
+          <div class="segmented" data-path="spotlight.shape">
             <button data-value="Circle">Cercle</button>
             <button data-value="HBand">Bande horizontale</button>
             <button data-value="VBand">Bande verticale</button>
@@ -284,7 +307,7 @@
           <input class="hotkey" data-path="hotkeys.toggle_all" readonly>
         </div>
         <div class="row">
-          <div class="row-text"><strong>Changer de spotlight</strong></div>
+          <div class="row-text"><strong>Allumer / éteindre le spotlight</strong></div>
           <input class="hotkey" data-path="hotkeys.cycle_spotlight" readonly>
         </div>
         <div class="row">
@@ -306,6 +329,18 @@
         <div class="row">
           <div class="row-text"><strong>Mode dessin</strong></div>
           <input class="hotkey" data-path="hotkeys.toggle_draw" readonly>
+        </div>
+        <div class="row">
+          <div class="row-text"><strong>Tableau blanc / noir</strong></div>
+          <input class="hotkey" data-path="hotkeys.cycle_board" readonly>
+        </div>
+        <div class="row">
+          <div class="row-text"><strong>Capture d'écran</strong></div>
+          <input class="hotkey" data-path="hotkeys.screenshot" readonly>
+        </div>
+        <div class="row">
+          <div class="row-text"><strong>Afficher / masquer la barre d'outils</strong></div>
+          <input class="hotkey" data-path="hotkeys.toggle_toolbar" readonly>
         </div>
       </div>
       <p class="warn" id="hk-warn" hidden></p>

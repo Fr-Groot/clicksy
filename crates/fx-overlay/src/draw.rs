@@ -31,6 +31,15 @@ pub struct Frame<'a> {
     pub trail: &'a [(f32, f32, f32)],
     /// Texte de la bulle et son opacité.
     pub banner: Option<(&'a str, f32)>,
+    /// Tableau plein écran : 0 aucun, 1 blanc, 2 noir, sur l'écran qui contient `board_pt`.
+    pub board: u8,
+    pub board_pt: (i32, i32),
+}
+
+impl Frame<'_> {
+    fn board_on(&self, s: &Surface) -> bool {
+        self.board != 0 && s.contains(self.board_pt.0, self.board_pt.1)
+    }
 }
 
 impl Frame<'_> {
@@ -135,7 +144,15 @@ pub fn draw(gpu: &Gpu, s: &Surface, f: &Frame) -> Result<()> {
         // Coordonnées du curseur relatives à cet écran.
         let cx = (f.cursor.0 - s.rect.left) as f32;
         let cy = (f.cursor.1 - s.rect.top) as f32;
-        if f.cfg.enabled {
+        if f.board_on(s) {
+            // Tableau : fond opaque sur tout l'écran, les dessins par-dessus.
+            let c = if f.board == 1 {
+                D2D1_COLOR_F { r: 1.0, g: 1.0, b: 1.0, a: 1.0 }
+            } else {
+                D2D1_COLOR_F { r: 0.11, g: 0.12, b: 0.12, a: 1.0 }
+            };
+            dc.Clear(Some(&c));
+        } else if f.cfg.enabled {
             draw_spotlight(gpu, s, f, cx, cy)?;
         }
         annot::draw_shapes(gpu, s, f)?;

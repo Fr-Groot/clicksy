@@ -4,7 +4,7 @@
 const TAURI = window.__TAURI__;
 const MOCK = {
   version: 1, enabled: true,
-  spotlight: { mode: "Off", radius: 140, band_size: 160, dim: 0.55, dim_color: "#000000", feather: 24 },
+  spotlight: { mode: "Off", shape: "Circle", radius: 140, band_size: 160, dim: 0.55, dim_color: "#000000", feather: 24 },
   ring: { enabled: true, radius: 26, thickness: 4, color: "#FFC400", opacity: 0.9, pulse: false, pulse_period_ms: 1400 },
   clicks: { enabled: true, left_color: "#1E90FF", right_color: "#FF3B5C", middle_color: "#2ECC71", radius: 42, thickness: 4,
             duration_ms: 450, show_held: true, sound: false, sound_volume: 0.5 },
@@ -12,8 +12,11 @@ const MOCK = {
   trail: { enabled: false, color: "#FFC400", duration_ms: 350, width: 6 },
   laser: { color: "#FF2222", size: 7, duration_ms: 600 },
   show_banner: true,
+  toolbar: { visible: true, hide_from_capture: true, x: null, y: null },
+  capture: { folder: "", copy_to_clipboard: true },
   hotkeys: { toggle_all: "Ctrl+Alt+Maj+A", cycle_spotlight: "Ctrl+Alt+Maj+S", toggle_ring: "Ctrl+Alt+Maj+R", toggle_clicks: "Ctrl+Alt+Maj+C",
-             toggle_draw: "Ctrl+Alt+Maj+D", toggle_laser: "Ctrl+Alt+Maj+L", toggle_trail: "Ctrl+Alt+Maj+T" },
+             toggle_draw: "Ctrl+Alt+Maj+D", toggle_laser: "Ctrl+Alt+Maj+L", toggle_trail: "Ctrl+Alt+Maj+T",
+             toggle_toolbar: "Ctrl+Alt+Maj+O", cycle_board: "Ctrl+Alt+Maj+W", screenshot: "Ctrl+Alt+Maj+P" },
 };
 const api = TAURI
   ? {
@@ -101,10 +104,10 @@ function render() {
   dim("#trail .card:first-of-type", cfg.trail.enabled);
   dimRow("clicks.sound_volume", cfg.clicks.sound);
   dimRow("ring.pulse_period_ms", cfg.ring.pulse);
-  const mode = cfg.spotlight.mode;
-  dimRow("spotlight.radius", mode === "Circle");
-  dimRow("spotlight.band_size", mode === "HBand" || mode === "VBand");
-  ["spotlight.dim", "spotlight.feather", "spotlight.dim_color"].forEach((p) => dimRow(p, mode !== "Off"));
+  const shape = cfg.spotlight.shape;
+  document.getElementById("spot-on").checked = cfg.spotlight.mode !== "Off";
+  dimRow("spotlight.radius", shape === "Circle");
+  dimRow("spotlight.band_size", shape === "HBand" || shape === "VBand");
   checkHotkeys();
 }
 
@@ -126,6 +129,8 @@ function bind() {
         const b = e.target.closest("button");
         if (!b) return;
         setPath(cfg, path, b.dataset.value);
+        // Changer de forme pendant que le spotlight est allumé : la nouvelle forme s'affiche tout de suite.
+        if (path === "spotlight.shape" && cfg.spotlight.mode !== "Off") cfg.spotlight.mode = b.dataset.value;
         render();
         pushSave();
       });
@@ -158,6 +163,11 @@ function bind() {
     });
   });
 
+  document.getElementById("spot-on").addEventListener("change", (e) => {
+    cfg.spotlight.mode = e.target.checked ? cfg.spotlight.shape : "Off";
+    render();
+    pushSave();
+  });
   document.getElementById("open-dir").addEventListener("click", () => api.openDir());
   document.getElementById("reset").addEventListener("click", async () => {
     if (!confirm("Remettre tous les réglages et raccourcis par défaut ?")) return;

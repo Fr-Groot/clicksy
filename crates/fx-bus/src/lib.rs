@@ -32,6 +32,27 @@ pub enum Action {
     ToggleDraw,
     ToggleLaser,
     ToggleTrail,
+    /// Outil de dessin (0 stylo, 1 cadre, 2 rond, 3 flèche) : active aussi le mode dessin.
+    SetTool(u8),
+    /// Couleur de dessin 0, 1 ou 2.
+    SetColor(u8),
+    /// Épaisseur suivante (fin → moyen → épais → très épais).
+    CycleWidth,
+    Undo,
+    ClearDrawings,
+    /// Revenir à la souris normale (quitte le mode dessin et le tableau).
+    ExitDraw,
+    /// Tableau : désactivé → blanc → noir → désactivé.
+    CycleBoard,
+    /// Tableau 1 blanc, 2 noir ; redemander le même le ferme.
+    SetBoard(u8),
+    /// Spotlight allumé / éteint, avec la forme choisie dans les réglages.
+    ToggleSpotlight,
+    Screenshot,
+    ToggleToolbar,
+    OpenSettings,
+    /// La barre d'outils a été déplacée (coin haut-gauche, pixels physiques).
+    ToolbarMoved { x: i32, y: i32 },
     ReloadConfig,
     Quit,
 }

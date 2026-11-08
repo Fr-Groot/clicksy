@@ -7,9 +7,12 @@ use fx_core::{paths, Config, DrawTool, Ripple, Shape, Shared};
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
 use std::time::Instant;
+use windows::Win32::Foundation::POINT;
+use windows::Win32::UI::WindowsAndMessaging::GetCursorPos;
 
 const VK_SHIFTS: [u32; 3] = [0x10, 0xA0, 0xA1];
 const VK_CTRLS: [u32; 3] = [0x11, 0xA2, 0xA3];
+const WIDTHS: [f32; 4] = [3.0, 5.0, 9.0, 14.0];
 
 #[derive(Default)]
 struct Keys {
@@ -24,6 +27,12 @@ pub fn start(shared: Arc<Shared>, rx: Receiver<Event>, on_config_changed: impl F
             let mut keys = Keys::default();
             for ev in rx {
                 let drawing = shared.modes.draw.load(Ordering::Relaxed);
+                // Les clics sur la barre d'outils lui appartiennent : ni onde, ni trait.
+                if let EventKind::MouseDown { x, y, .. } | EventKind::MouseUp { x, y, .. } = ev.kind {
+                    if shared.modes.on_toolbar(x, y) {
+                        continue;
+                    }
+                }
                 match ev.kind {
                     EventKind::KeyDown { vk, injected, .. } | EventKind::KeyUp { vk, injected, .. } if !injected => {
                         let down = matches!(ev.kind, EventKind::KeyDown { .. });
@@ -41,12 +50,14 @@ pub fn start(shared: Arc<Shared>, rx: Receiver<Event>, on_config_changed: impl F
                     EventKind::MouseDown { button, x, y } if drawing => draw_mouse(&shared, button, x, y, true, &keys),
                     EventKind::MouseUp { button, x, y } if drawing => draw_mouse(&shared, button, x, y, false, &keys),
                     EventKind::MouseMove { x, y } if drawing => update_current(&shared, Some((x as f32, y as f32)), keys.shift),
-                    EventKind::Wheel { delta, .. } if drawing => {
-                        let mut fx = shared.fx.lock().unwrap();
-                        let step = if delta > 0 { 1.0 } else { -1.0 };
-                        fx.draw.width = (fx.draw.width + step).clamp(1.0, 40.0);
-                        let w = fx.draw.width;
-                        drop(fx);
+                    EventKind::Wheel { delta, x, y, .. } if drawing && !shared.modes.on_toolbar(x, y) => {
+                        let w = {
+                            let mut fx = shared.fx.lock().unwrap();
+                            let step = if delta > 0 { 1.0 } else { -1.0 };
+                            fx.draw.width = (fx.draw.width + step).clamp(1.0, 40.0);
+                            fx.draw.generation += 1;
+                            fx.draw.width
+                        };
                         shared.banner(format!("Épaisseur : {w:.0}"));
                     }
                     EventKind::MouseDown { button, x, y } => on_mouse(&shared, button, x, y, true),
@@ -92,6 +103,15 @@ fn on_mouse(shared: &Shared, button: MouseButton, x: i32, y: i32, down: bool) {
 }
 
 // ---------------------------------------------------------------- Dessin
+
+fn tool_from(i: u8) -> DrawTool {
+    match i {
+        1 => DrawTool::Rect,
+        2 => DrawTool::Ellipse,
+        3 => DrawTool::Arrow,
+        _ => DrawTool::Pen,
+    }
+}
 
 fn next_tool(t: DrawTool) -> DrawTool {
     match t {
@@ -173,83 +193,155 @@ fn update_current(shared: &Shared, p: Option<(f32, f32)>, shift: bool) {
     shared.wake();
 }
 
-/// Touches du mode dessin. Renvoie `true` si le mode dessin a été quitté.
-fn draw_key(shared: &Shared, vk: u32, keys: &Keys) -> bool {
-    let cfg = shared.config.load();
-    let mut fx = shared.fx.lock().unwrap();
-    let d = &mut fx.draw;
-    let mut banner: Option<String> = None;
-    let mut exit = false;
-    match vk {
-        0x31..=0x33 => {
-            d.color_index = (vk - 0x31) as usize;
-            banner = Some(format!("Couleur {}", d.color_index + 1));
-        }
-        0x50 => d.tool = DrawTool::Pen,
-        0x52 => d.tool = DrawTool::Rect,
-        0x45 => d.tool = DrawTool::Ellipse,
-        0x46 => d.tool = DrawTool::Arrow,
-        0x5A if keys.ctrl => {
-            d.current = None;
-            if d.shapes.pop().is_some() {
-                banner = Some("Annulé".into());
-            }
-        }
-        0x2E => {
-            d.shapes.clear();
-            d.current = None;
-            banner = Some("Dessins effacés".into());
-        }
-        0x1B => {
-            // Échap : efface tout ; s'il n'y a rien à effacer, quitte le mode dessin.
-            if d.shapes.is_empty() && d.current.is_none() {
-                exit = true;
-            } else {
-                d.shapes.clear();
-                d.current = None;
-                banner = Some("Dessins effacés".into());
-            }
-        }
-        _ => return false,
-    }
-    if matches!(vk, 0x50 | 0x52 | 0x45 | 0x46) {
-        banner = Some(format!("Outil : {}", d.tool.label_fr()));
-    }
-    d.generation += 1;
-    drop(fx);
-    drop(cfg);
-    if exit {
-        set_draw_mode(shared, false);
-        return true;
-    }
+/// Modifie l'état de dessin puis affiche éventuellement une bulle.
+fn with_draw(shared: &Shared, f: impl FnOnce(&mut fx_core::DrawState) -> Option<String>) {
+    let banner = {
+        let mut fx = shared.fx.lock().unwrap();
+        let b = f(&mut fx.draw);
+        fx.draw.generation += 1;
+        b
+    };
     match banner {
         Some(b) => shared.banner(b),
         None => shared.wake(),
     }
+}
+
+fn set_tool(shared: &Shared, tool: DrawTool) {
+    if !shared.modes.draw.load(Ordering::Acquire) {
+        set_draw_mode(shared, true, false);
+    }
+    with_draw(shared, |d| {
+        d.tool = tool;
+        Some(format!("Outil : {}", tool.label_fr()))
+    });
+}
+
+fn undo(shared: &Shared) {
+    with_draw(shared, |d| {
+        d.current = None;
+        d.shapes.pop().map(|_| "Annulé".to_string())
+    });
+}
+
+fn clear(shared: &Shared) {
+    with_draw(shared, |d| {
+        d.current = None;
+        d.shapes.clear();
+        Some("Dessins effacés".into())
+    });
+}
+
+/// Touches du mode dessin. Renvoie `true` si le mode dessin a été quitté.
+fn draw_key(shared: &Shared, vk: u32, keys: &Keys) -> bool {
+    match vk {
+        0x31..=0x33 => set_color(shared, (vk - 0x31) as usize),
+        0x50 => set_tool(shared, DrawTool::Pen),
+        0x52 => set_tool(shared, DrawTool::Rect),
+        0x45 => set_tool(shared, DrawTool::Ellipse),
+        0x46 => set_tool(shared, DrawTool::Arrow),
+        0x5A if keys.ctrl => undo(shared),
+        0x2E => clear(shared),
+        0x1B => {
+            // Échap : efface tout ; s'il n'y a rien à effacer, quitte le mode dessin.
+            let empty = {
+                let fx = shared.fx.lock().unwrap();
+                fx.draw.shapes.is_empty() && fx.draw.current.is_none()
+            };
+            if empty {
+                set_draw_mode(shared, false, true);
+                return true;
+            }
+            clear(shared);
+        }
+        _ => {}
+    }
     false
 }
 
-fn set_draw_mode(shared: &Shared, on: bool) {
+fn set_color(shared: &Shared, i: usize) {
+    with_draw(shared, |d| {
+        d.color_index = i.min(2);
+        Some(format!("Couleur {}", d.color_index + 1))
+    });
+}
+
+fn set_draw_mode(shared: &Shared, on: bool, banner: bool) {
     let cfg = shared.config.load();
     shared.modes.draw.store(on, Ordering::Release);
     {
         let mut fx = shared.fx.lock().unwrap();
+        fx.held = [false; 3];
         let d = &mut fx.draw;
         d.current = None;
         if on {
             d.tool = cfg.draw.default_tool;
             d.width = cfg.draw.width;
-        } else if cfg.draw.clear_on_exit {
-            d.shapes.clear();
+        } else {
+            // Quitter le dessin ferme aussi le tableau (sinon les clics iraient aux applis cachées).
+            if shared.modes.board.swap(0, Ordering::AcqRel) != 0 {
+                std::mem::swap(&mut d.shapes, &mut d.stash);
+                d.stash.clear();
+            }
+            if cfg.draw.clear_on_exit {
+                d.shapes.clear();
+            }
         }
         d.generation += 1;
-        fx.held = [false; 3];
     }
-    if on {
-        shared.banner("Mode dessin · 1 2 3 couleurs · P stylo · R cadre · E rond · F flèche · Échap efface");
+    if banner {
+        if on {
+            shared.banner("Mode dessin · 1 2 3 couleurs · P stylo · R cadre · E rond · F flèche · Échap efface");
+        } else {
+            shared.banner("Souris normale");
+        }
     } else {
-        shared.banner("Mode dessin terminé");
+        shared.wake();
     }
+}
+
+/// Raccourci : désactivé → blanc → noir → désactivé.
+fn cycle_board(shared: &Shared) {
+    let cur = shared.modes.board.load(Ordering::Acquire);
+    set_board(shared, (cur + 1) % 3);
+}
+
+/// Ouvre le tableau blanc (1) ou noir (2), ou le ferme (0). Redemander le tableau déjà ouvert
+/// le ferme. Les dessins de l'écran sont mis de côté pendant que le tableau est ouvert.
+fn set_board(shared: &Shared, target: u8) {
+    let m = &shared.modes;
+    let cur = m.board.load(Ordering::Acquire);
+    let next = if target == cur { 0 } else { target };
+    if cur == 0 && next != 0 {
+        let mut pt = POINT::default();
+        unsafe {
+            let _ = GetCursorPos(&mut pt);
+        }
+        m.board_x.store(pt.x, Ordering::Release);
+        m.board_y.store(pt.y, Ordering::Release);
+        if !m.draw.load(Ordering::Acquire) {
+            set_draw_mode(shared, true, false);
+        }
+        with_draw(shared, |d| {
+            d.current = None;
+            std::mem::swap(&mut d.shapes, &mut d.stash);
+            None
+        });
+    }
+    if cur != 0 && next == 0 {
+        with_draw(shared, |d| {
+            d.current = None;
+            std::mem::swap(&mut d.shapes, &mut d.stash);
+            d.stash.clear();
+            None
+        });
+    }
+    m.board.store(next, Ordering::Release);
+    shared.banner(match next {
+        1 => "Tableau blanc · dessine directement · Échap efface",
+        2 => "Tableau noir",
+        _ => "Tableau fermé",
+    });
 }
 
 // ---------------------------------------------------------------- Actions
@@ -270,8 +362,52 @@ fn apply(shared: &Shared, action: Action) -> bool {
         }
         Action::ToggleDraw => {
             let on = !shared.modes.draw.load(Ordering::Acquire);
-            set_draw_mode(shared, on);
+            set_draw_mode(shared, on, true);
             return true;
+        }
+        Action::ExitDraw => {
+            set_draw_mode(shared, false, true);
+            return true;
+        }
+        Action::SetTool(i) => {
+            set_tool(shared, tool_from(i));
+            return true;
+        }
+        Action::SetColor(i) => {
+            set_color(shared, i as usize);
+            return true;
+        }
+        Action::CycleWidth => {
+            with_draw(shared, |d| {
+                let next = WIDTHS.iter().copied().find(|w| *w > d.width + 0.5).unwrap_or(WIDTHS[0]);
+                d.width = next;
+                Some(format!("Épaisseur : {next:.0}"))
+            });
+            return true;
+        }
+        Action::Undo => {
+            undo(shared);
+            return false;
+        }
+        Action::ClearDrawings => {
+            clear(shared);
+            return false;
+        }
+        Action::CycleBoard => {
+            cycle_board(shared);
+            return true;
+        }
+        Action::SetBoard(n) => {
+            set_board(shared, n.min(2));
+            return true;
+        }
+        Action::Screenshot => {
+            crate::capture::take(shared);
+            return false;
+        }
+        Action::OpenSettings => {
+            crate::settings::open();
+            return false;
         }
         Action::ToggleLaser => {
             let on = !shared.modes.laser.load(Ordering::Acquire);
@@ -286,11 +422,24 @@ fn apply(shared: &Shared, action: Action) -> bool {
                 c.enabled = true;
             }
             Action::SetSpotlight(m) => c.spotlight.mode = *m,
+            Action::ToggleSpotlight => {
+                if c.spotlight.mode == fx_core::SpotlightMode::Off {
+                    c.spotlight.mode = c.spotlight.shape;
+                    c.enabled = true;
+                } else {
+                    c.spotlight.mode = fx_core::SpotlightMode::Off;
+                }
+            }
             Action::ToggleRing => c.ring.enabled = !c.ring.enabled,
             Action::TogglePulse => c.ring.pulse = !c.ring.pulse,
             Action::ToggleClicks => c.clicks.enabled = !c.clicks.enabled,
             Action::ToggleClickSound => c.clicks.sound = !c.clicks.sound,
             Action::ToggleTrail => c.trail.enabled = !c.trail.enabled,
+            Action::ToggleToolbar => c.toolbar.visible = !c.toolbar.visible,
+            Action::ToolbarMoved { x, y } => {
+                c.toolbar.x = Some(*x);
+                c.toolbar.y = Some(*y);
+            }
             _ => {}
         }),
     }
@@ -305,12 +454,13 @@ fn apply(shared: &Shared, action: Action) -> bool {
 fn banner_for(action: &Action, c: &Config) -> Option<String> {
     Some(match action {
         Action::ToggleAll => if c.enabled { "Clicksy : effets activés".into() } else { "Clicksy : effets en pause".into() },
-        Action::CycleSpotlight | Action::SetSpotlight(_) => format!("Spotlight : {}", c.spotlight.mode.label_fr().to_lowercase()),
+        Action::CycleSpotlight | Action::SetSpotlight(_) | Action::ToggleSpotlight => format!("Spotlight : {}", c.spotlight.mode.label_fr().to_lowercase()),
         Action::ToggleRing => format!("Anneau {}", on_off(c.ring.enabled)),
         Action::TogglePulse => format!("Pulsation {}", if c.ring.pulse { "activée" } else { "désactivée" }),
         Action::ToggleClicks => format!("Effets de clic {}", on_off(c.clicks.enabled)),
         Action::ToggleClickSound => format!("Son de clic {}", on_off(c.clicks.sound)),
         Action::ToggleTrail => format!("Traînée {}", if c.trail.enabled { "activée" } else { "désactivée" }),
+        Action::ToggleToolbar => format!("Barre d'outils {}", if c.toolbar.visible { "affichée" } else { "masquée" }),
         _ => return None,
     })
 }

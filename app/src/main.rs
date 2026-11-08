@@ -1,6 +1,7 @@
 // En version release, pas de console. En debug, la console affiche les messages de diagnostic.
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod capture;
 mod engine;
 mod settings;
 mod tray;
