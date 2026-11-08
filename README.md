@@ -5,7 +5,7 @@ effets de clic, traînée, pointeur laser et dessin à l'écran, pour les tutos 
 de logiciels et les classes virtuelles (Teams, Zoom, Meet).
 
 **Aucun appel réseau, aucune télémétrie, aucune touche enregistrée.** Interface en français.
-Signature de code : voir la [Code signing policy](#code-signing-policy) (SignPath Foundation).
+Fichiers non signés pour l'instant : voir [Signature du code](#signature-du-code).
 
 > Version 0.3.0 : enregistrement vidéo de l'écran, d'une fenêtre ou d'une zone, avec le son du PC et le micro. L'éditeur (aperçu, découpe, export avec effets) suivra en 0.4.
 
@@ -24,7 +24,7 @@ Deux versions, à télécharger dans l'onglet **Releases** du dépôt :
 - **Portable** : dézipper puis lancer `clicksy.exe`. Les réglages restent dans le dossier `data\` à côté.
 
 Windows peut afficher « Windows a protégé votre ordinateur » : les binaires ne sont **pas encore signés**
-(voir [Code signing policy](#code-signing-policy)). Cliquer sur *Informations complémentaires › Exécuter quand même*.
+(voir [Signature du code](#signature-du-code)). Cliquer sur *Informations complémentaires › Exécuter quand même*.
 
 WebView2 (fenêtre de réglages) est présent d'office sur Windows 11 et sur la plupart des Windows 10 ;
 s'il manque, l'installeur MSI le récupère auprès de Microsoft.
@@ -167,21 +167,19 @@ Pratique pour un bouton Stream Deck (action « Ouvrir » avec ces arguments).
 - **Jeux en plein écran exclusif** : surcouche invisible (les jeux en fenêtre sans bordure fonctionnent).
 - **Partage d'une seule fenêtre** dans Teams/Zoom : les effets ne sont pas transmis (partager l'écran entier).
 
-## Code signing policy
+## Signature du code
 
-Free code signing provided by [SignPath.io](https://about.signpath.io), certificate by
-[SignPath Foundation](https://signpath.org).
+**Les fichiers de Clicksy ne sont pas signés pour l'instant.** Windows SmartScreen peut donc afficher un
+avertissement, et certains PC d'entreprise bloquent leur exécution.
 
-*Signature de code gratuite fournie par SignPath.io, certificat délivré par SignPath Foundation.
-Demande en cours : les versions publiées avant l'accord (0.1.0, 0.2.0) ne sont pas signées.*
-
-| Rôle | Membres |
-|---|---|
-| Committers and reviewers (auteurs et relecteurs) | [Fr-Groot](https://github.com/Fr-Groot) |
-| Approvers (approbation de chaque signature) | [Fr-Groot](https://github.com/Fr-Groot) |
+- **En entreprise**, le service informatique peut autoriser le MSI, ou le signer avec l'autorité de
+  certification interne de l'entreprise (certificat déployé par GPO ou Intune). Le code source et le
+  workflow de construction (GitHub Actions) sont publics pour qu'il puisse les vérifier.
+- Une signature publique (programme open source de SignPath Foundation, ou certificat Certum Open Source)
+  sera envisagée quand le projet sera plus largement utilisé.
 
 Seuls les fichiers construits par le workflow GitHub Actions public de ce dépôt, à partir de son code
-source, sont soumis à la signature. Chaque signature est approuvée manuellement.
+source, sont publiés dans les releases. Les sommes SHA256 de chaque fichier sont dans `SHA256SUMS.txt`.
 
 ### Privacy policy
 
