@@ -5,6 +5,7 @@ effets de clic, traînée, pointeur laser et dessin à l'écran, pour les tutos 
 de logiciels et les classes virtuelles (Teams, Zoom, Meet).
 
 **Aucun appel réseau, aucune télémétrie, aucune touche enregistrée.** Interface en français.
+Signature de code : voir la [Code signing policy](#code-signing-policy) (SignPath Foundation).
 
 > Version 0.2.0 : barre d'outils flottante, tableau blanc / noir, capture d'écran. L'enregistrement vidéo avec éditeur est la prochaine étape.
 
@@ -23,7 +24,7 @@ Deux versions, à télécharger dans l'onglet **Releases** du dépôt :
 - **Portable** : dézipper puis lancer `clicksy.exe`. Les réglages restent dans le dossier `data\` à côté.
 
 Windows peut afficher « Windows a protégé votre ordinateur » : les binaires ne sont **pas encore signés**
-(voir [Signature](#signature)). Cliquer sur *Informations complémentaires › Exécuter quand même*.
+(voir [Code signing policy](#code-signing-policy)). Cliquer sur *Informations complémentaires › Exécuter quand même*.
 
 WebView2 (fenêtre de réglages) est présent d'office sur Windows 11 et sur la plupart des Windows 10 ;
 s'il manque, l'installeur MSI le récupère auprès de Microsoft.
@@ -132,12 +133,32 @@ Pratique pour un bouton Stream Deck (action « Ouvrir » avec ces arguments).
 - **Jeux en plein écran exclusif** : surcouche invisible (les jeux en fenêtre sans bordure fonctionnent).
 - **Partage d'une seule fenêtre** dans Teams/Zoom : les effets ne sont pas transmis (partager l'écran entier).
 
-## Signature
+## Code signing policy
 
-Les binaires ne sont pas encore signés. Pistes, par ordre de préférence pour des PC d'entreprise :
-PKI interne de l'entreprise (déploiement du certificat par GPO), signature gratuite
-[SignPath Foundation](https://signpath.org) pour les projets open source, certificat Certum Open Source.
-Une fois signé, le MSI pourra activer `uiAccess` (premier plan au-dessus des apps admin).
+Free code signing provided by [SignPath.io](https://about.signpath.io), certificate by
+[SignPath Foundation](https://signpath.org).
+
+*Signature de code gratuite fournie par SignPath.io, certificat délivré par SignPath Foundation.
+Demande en cours : les versions publiées avant l'accord (0.1.0, 0.2.0) ne sont pas signées.*
+
+| Rôle | Membres |
+|---|---|
+| Committers and reviewers (auteurs et relecteurs) | [Fr-Groot](https://github.com/Fr-Groot) |
+| Approvers (approbation de chaque signature) | [Fr-Groot](https://github.com/Fr-Groot) |
+
+Seuls les fichiers construits par le workflow GitHub Actions public de ce dépôt, à partir de son code
+source, sont soumis à la signature. Chaque signature est approuvée manuellement.
+
+### Privacy policy
+
+This program will not transfer any information to other networked systems unless specifically
+requested by the user or the person installing or operating it.
+
+*Clicksy n'envoie aucune information sur le réseau. Il n'a ni télémétrie ni mise à jour automatique,
+et les touches frappées ne sont jamais enregistrées. Seule exception : si WebView2 manque, l'installeur
+MSI le télécharge auprès de Microsoft.*
+
+Une fois signé, le MSI pourra aussi activer `uiAccess` (premier plan au-dessus des apps admin).
 
 ## Compiler
 
