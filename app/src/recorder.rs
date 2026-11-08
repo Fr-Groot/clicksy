@@ -133,8 +133,11 @@ pub fn go(shared: &Arc<Shared>, target: RecordTarget) {
         _ => fx_record::Target::Monitor { hmonitor: hmon.0 as isize },
     };
 
-    // On cache la surcouche (et la barre) de la capture AVANT de démarrer, puis on laisse au
-    // thread de rendu le temps d'appliquer l'exclusion.
+    // Mode « incrusté » : la vidéo montre la souris et les effets, comme à l'écran.
+    // Mode « éditable » : on cache la surcouche de la capture. Dans les deux cas, la barre
+    // d'outils est exclue ; on laisse au thread de rendu le temps d'appliquer l'exclusion.
+    let burn = cfg.record.burn_effects;
+    shared.modes.rec_exclude.store(!burn, Ordering::Release);
     shared.modes.recording.store(true, Ordering::Release);
     shared.wake();
     std::thread::sleep(Duration::from_millis(120));
@@ -144,16 +147,21 @@ pub fn go(shared: &Arc<Shared>, target: RecordTarget) {
         fps: cfg.record.fps,
         system_audio: cfg.record.system_audio,
         mic: cfg.record.mic,
+        cursor: burn,
         folder: videos_dir(shared),
     };
     match fx_record::Recording::start(opts) {
         Ok(rec) => {
             *RECORDING.lock().unwrap() = Some(rec);
-            shared.fx.lock().unwrap().rec = Some((Instant::now(), rect));
+            // En mode incrusté, un cadre rouge sur le bord de l'écran filmé apparaîtrait dans la vidéo :
+            // on ne le dessine que s'il est hors de l'image (fenêtre ou zone).
+            let frame = if burn && matches!(fx_target, fx_record::Target::Monitor { .. }) { [0; 4] } else { rect };
+            shared.fx.lock().unwrap().rec = Some((Instant::now(), frame));
             shared.wake();
         }
         Err(e) => {
             shared.modes.recording.store(false, Ordering::Release);
+            shared.modes.rec_exclude.store(false, Ordering::Release);
             shared.banner(format!("Enregistrement impossible : {e}"));
         }
     }
@@ -174,6 +182,7 @@ pub fn stop(shared: &Arc<Shared>) {
         let result = rec.stop();
         shared.fx.lock().unwrap().rec = None;
         shared.modes.recording.store(false, Ordering::Release);
+        shared.modes.rec_exclude.store(false, Ordering::Release);
         match result {
             Ok((dir, warnings)) => {
                 let mut msg = format!("Enregistrement terminé ({}:{:02})", secs / 60, secs % 60);

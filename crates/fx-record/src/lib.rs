@@ -43,6 +43,8 @@ pub struct Options {
     pub fps: u32,
     pub system_audio: bool,
     pub mic: bool,
+    /// Filmer aussi le curseur de Windows.
+    pub cursor: bool,
     /// Dossier parent ; le projet est créé dedans.
     pub folder: PathBuf,
 }
@@ -63,7 +65,7 @@ impl Recording {
         let stop = Arc::new(AtomicBool::new(false));
         let source = project::describe(&opts.target)?;
 
-        let video = video::VideoCapture::start(&opts.target, &source, opts.fps, &dir.join("screen.mp4"))?;
+        let video = video::VideoCapture::start(&opts.target, &source, opts.fps, opts.cursor, &dir.join("screen.mp4"))?;
 
         let mut workers = Vec::new();
         if opts.system_audio {

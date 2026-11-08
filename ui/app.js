@@ -14,7 +14,7 @@ const MOCK = {
   show_banner: true,
   toolbar: { visible: true, hide_from_capture: true, x: null, y: null },
   capture: { folder: "", copy_to_clipboard: true },
-  record: { system_audio: true, mic: true, fps: 30, countdown: true, folder: "", open_folder_after: true },
+  record: { system_audio: true, mic: true, fps: 30, countdown: true, folder: "", open_folder_after: true, burn_effects: true },
   hotkeys: { toggle_all: "Ctrl+Alt+Maj+A", cycle_spotlight: "Ctrl+Alt+Maj+S", toggle_ring: "Ctrl+Alt+Maj+R", toggle_clicks: "Ctrl+Alt+Maj+C",
              toggle_draw: "Ctrl+Alt+Maj+D", toggle_laser: "Ctrl+Alt+Maj+L", toggle_trail: "Ctrl+Alt+Maj+T",
              toggle_toolbar: "Ctrl+Alt+Maj+O", cycle_board: "Ctrl+Alt+Maj+W", screenshot: "Ctrl+Alt+Maj+P",

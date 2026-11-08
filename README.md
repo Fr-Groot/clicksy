@@ -89,22 +89,26 @@ Bouton **Vidéo** de la barre d'outils : écran entier, une fenêtre (clic dessu
 avec le son du PC et le micro (activables dans le même menu). Compte à rebours de 3 secondes, puis le bouton
 affiche le chrono ; un clic dessus arrête. Un cadre rouge entoure ce qui est enregistré : toi seul le vois.
 
-**Effets éditables :** la vidéo est filmée *sans* curseur ni effets Clicksy. Le curseur (position et forme)
-et les clics sont notés à part ; l'éditeur (version 0.4) les redessinera, avec les réglages de ton choix,
-et permettra de couper la vidéo. Les touches tapées ne sont jamais enregistrées.
+**Deux modes** (Réglages › Enregistrement › « Incruster la souris et les effets ») :
+- **Incrusté** (par défaut) : la vidéo montre ce que tu vois — souris, anneau, clics, dessins, spotlight,
+  tableau. Prête à partager. Seuls la barre d'outils et le cadre rouge restent hors de la vidéo.
+- **Éditable** : vidéo filmée *sans* souris ni effets ; le curseur (position, forme) et les clics sont notés
+  à part pour être redessinés, avec les réglages de ton choix, dans l'éditeur (version 0.4).
+
+Dans les deux cas, le journal du curseur est enregistré, et les touches tapées ne le sont jamais.
 
 Chaque enregistrement crée un dossier dans `Vidéos\Clicksy` :
 
 | Fichier | Contenu |
 |---|---|
-| `screen.mp4` | Vidéo H.264 (encodeur matériel de Windows), sans curseur ni effets |
+| `screen.mp4` | Vidéo H.264 (encodeur matériel de Windows) |
 | `system.wav`, `mic.wav` | Son du PC et micro, pistes séparées, alignées sur la vidéo |
 | `events.jsonl` | Positions et formes du curseur, clics, molette (horodatés) |
 | `cursors\` | Images des formes de curseur rencontrées |
 | `project.json` | Source, tailles, horloges |
 
-Limites : pas encore de pause ; un contenu protégé (vidéo sous DRM) apparaît en noir ; pendant
-l'enregistrement, les effets Clicksy ne sont pas visibles non plus dans un partage Teams simultané.
+Limites : pas encore de pause ; un contenu protégé (vidéo sous DRM) apparaît en noir ; en mode éditable,
+les effets Clicksy ne sont pas visibles non plus dans un partage Teams simultané.
 
 ### Ligne de commande (Stream Deck, scripts)
 
@@ -147,7 +151,7 @@ Pratique pour un bouton Stream Deck (action « Ouvrir » avec ces arguments).
 | 28 | Bouton Blanc, dessiner, bouton Noir, re-cliquer Noir | Blanc puis noir plein écran (mêmes dessins) ; fermé au 2ᵉ clic, les dessins de l'écran reviennent |
 | 29 | Bouton Capture | Bulle « Capture enregistrée et copiée » ; fichier PNG dans Images\Clicksy ; collable dans Word ou Teams |
 | 30 | Bouton Vidéo › Enregistrer l'écran entier, parler, bouger la souris, re-cliquer Vidéo | Compte à rebours 3-2-1, chrono dans la barre, cadre rouge ; à l'arrêt, dossier ouvert avec `screen.mp4` lisible, `mic.wav` audible |
-| 31 | Lire `screen.mp4` | Le curseur et les effets Clicksy **n'apparaissent pas** dans la vidéo (ils sont dans `events.jsonl`) |
+| 31 | Lire `screen.mp4` (mode incrusté par défaut) | La souris, l'anneau, les clics et les dessins sont dans la vidéo ; la barre d'outils n'y est pas |
 | 32 | Bouton Vidéo › Enregistrer une fenêtre…, cliquer sur une fenêtre | Seule cette fenêtre est filmée, même si on la déplace |
 | 33 | Bouton Vidéo › Enregistrer une zone…, tracer un rectangle | Dimensions affichées pendant le tracé ; cadre rouge autour de la zone pendant l'enregistrement |
 | 34 | Pendant le choix de la source, Échap ou clic droit | « Enregistrement annulé » |

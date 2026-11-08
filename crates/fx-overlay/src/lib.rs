@@ -184,9 +184,10 @@ unsafe fn render_frame(
     let board_pt = (shared.modes.board_x.load(Ordering::Acquire), shared.modes.board_y.load(Ordering::Acquire));
     let select = shared.modes.select.load(Ordering::Acquire);
     let recording = shared.modes.recording.load(Ordering::Acquire);
-    // Pendant un enregistrement, la surcouche n'apparaît pas dans la vidéo.
+    // Enregistrement en mode « éditable » : la surcouche n'apparaît pas dans la vidéo.
+    let exclude = recording && shared.modes.rec_exclude.load(Ordering::Acquire);
     for s in surfaces.iter_mut() {
-        s.set_excluded(recording);
+        s.set_excluded(exclude);
     }
 
     let mut pt = POINT::default();
@@ -267,7 +268,7 @@ unsafe fn render_frame(
         select,
         select_rect: if select == 1 { hovered_window(pt) } else { zone },
         countdown,
-        rec_rect: rec.map(|r| r.1),
+        rec_rect: rec.map(|r| r.1).filter(|r| r[2] > r[0]),
     };
 
     // Le contenu « statique » dépend de la config et des formes dessinées.

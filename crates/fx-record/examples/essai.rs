@@ -12,6 +12,7 @@ fn main() {
         fps: 30,
         system_audio: true,
         mic: true,
+        cursor: true,
         folder: folder.into(),
     })
     .expect("démarrage");

@@ -97,11 +97,14 @@ pub struct RecordCfg {
     pub folder: String,
     /// Ouvrir le dossier du projet à la fin.
     pub open_folder_after: bool,
+    /// Incruster la souris et les effets Clicksy dans la vidéo (ce que voit le formateur).
+    /// Sinon : vidéo « propre », effets à redessiner dans l'éditeur.
+    pub burn_effects: bool,
 }
 
 impl Default for RecordCfg {
     fn default() -> Self {
-        RecordCfg { system_audio: true, mic: true, fps: 30, countdown: true, folder: String::new(), open_folder_after: true }
+        RecordCfg { system_audio: true, mic: true, fps: 30, countdown: true, folder: String::new(), open_folder_after: true, burn_effects: true }
     }
 }
 

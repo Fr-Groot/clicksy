@@ -93,8 +93,10 @@ pub struct Modes {
     pub toolbar_rect: [AtomicI32; 4],
     /// La barre d'outils suit la souris (déplacement en cours).
     pub toolbar_drag: AtomicBool,
-    /// Enregistrement vidéo en cours : la surcouche est alors exclue de la capture.
+    /// Enregistrement vidéo en cours (chrono, cadre rouge).
     pub recording: AtomicBool,
+    /// Pendant l'enregistrement, la surcouche est exclue de la vidéo (mode « éditable »).
+    pub rec_exclude: AtomicBool,
     /// Choix de la source à la souris : 0 aucun, 1 fenêtre, 2 zone.
     pub select: AtomicU8,
 }

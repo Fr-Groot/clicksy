@@ -77,7 +77,7 @@ fn even(v: i32) -> u32 {
 }
 
 impl VideoCapture {
-    pub fn start(target: &Target, source: &SourceInfo, fps: u32, path: &Path) -> Result<Self, String> {
+    pub fn start(target: &Target, source: &SourceInfo, fps: u32, cursor: bool, path: &Path) -> Result<Self, String> {
         let r = source.capture_rect;
         let size = (even(r[2] - r[0]), even(r[3] - r[1]));
         let first_ts = Arc::new(AtomicI64::new(0));
@@ -94,11 +94,11 @@ impl VideoCapture {
         let control = match *target {
             Target::Window { hwnd } => {
                 let item = Window::from_raw_hwnd(hwnd as *mut _);
-                Handler::start_free_threaded(settings(item, interval, flags))
+                Handler::start_free_threaded(settings(item, interval, cursor, flags))
             }
             Target::Monitor { hmonitor } | Target::Region { hmonitor, .. } => {
                 let item = Monitor::from_raw_hmonitor(hmonitor as *mut _);
-                Handler::start_free_threaded(settings(item, interval, flags))
+                Handler::start_free_threaded(settings(item, interval, cursor, flags))
             }
         }
         .map_err(|e| format!("capture vidéo impossible : {e}"))?;
@@ -125,12 +125,13 @@ impl VideoCapture {
 fn settings<T: TryInto<windows_capture::settings::GraphicsCaptureItemType>>(
     item: T,
     interval: MinimumUpdateIntervalSettings,
+    cursor: bool,
     flags: Flags,
 ) -> Settings<Flags, T> {
     Settings::new(
         item,
-        // Le curseur est redessiné à l'export (effets éditables).
-        CursorCaptureSettings::WithoutCursor,
+        // Mode « éditable » : sans curseur, il sera redessiné à l'export.
+        if cursor { CursorCaptureSettings::WithCursor } else { CursorCaptureSettings::WithoutCursor },
         // Pas de cadre jaune autour de la zone capturée (Windows 11 ; ignoré sur Windows 10).
         DrawBorderSettings::WithoutBorder,
         SecondaryWindowSettings::Default,
