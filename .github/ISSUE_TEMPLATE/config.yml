@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Télécharger la dernière version
+    url: https://github.com/Fr-Groot/clicksy/releases/latest
+    about: MSI pour une installation sur tout le PC, ou zip portable.

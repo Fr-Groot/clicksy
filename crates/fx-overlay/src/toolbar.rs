@@ -429,7 +429,7 @@ unsafe fn paint(gpu: &Gpu, tb: &Toolbar, cfg: &Config, view: &View) -> Result<()
         radiusX: 12.0,
         radiusY: 12.0,
     };
-    gpu.brush.SetColor(&D2D1_COLOR_F { r: 0.11, g: 0.11, b: 0.13, a: 0.95 });
+    gpu.brush.SetColor(&D2D1_COLOR_F { r: 0.11, g: 0.11, b: 0.13, a: 1.0 });
     dc.FillRoundedRectangle(&bg, &gpu.brush);
     gpu.brush.SetColor(&D2D1_COLOR_F { r: 1.0, g: 1.0, b: 1.0, a: 0.14 });
     dc.DrawRoundedRectangle(&bg, &gpu.brush, 1.0, None);

@@ -1,0 +1,26 @@
+name: Proposer une idée / Feature request
+description: Un effet, un outil ou une amélioration qui vous aiderait. An effect, tool or improvement you'd like.
+labels: ["idée"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Les idées venant de formateurs et de présentateurs sont les plus précieuses. French or English welcome.
+  - type: textarea
+    id: need
+    attributes:
+      label: Votre besoin
+      description: Dans quelle situation (tuto, classe virtuelle, démo…) et ce qui vous manque aujourd'hui.
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: Votre idée
+      description: Ce que Clicksy pourrait faire. Un croquis ou un exemple d'un autre outil aide beaucoup.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Comment faites-vous aujourd'hui ?

@@ -1,0 +1,59 @@
+name: Signaler un problème / Bug report
+description: Quelque chose ne marche pas comme prévu. Something doesn't work as expected.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Merci de prendre le temps de signaler ce problème ! Vous pouvez écrire en français ou en anglais.
+        Thanks for reporting! French or English are both fine.
+  - type: input
+    id: version
+    attributes:
+      label: Version de Clicksy
+      description: Clic droit sur l'icône › Réglages › Général, ou le nom du fichier téléchargé.
+      placeholder: "0.3.0"
+    validations:
+      required: true
+  - type: dropdown
+    id: install
+    attributes:
+      label: Type d'installation
+      options:
+        - MSI (installé)
+        - Portable (zip)
+        - Compilé depuis les sources
+    validations:
+      required: true
+  - type: input
+    id: windows
+    attributes:
+      label: Version de Windows
+      description: "Touche Windows, tapez « winver »."
+      placeholder: "Windows 11 24H2"
+  - type: textarea
+    id: steps
+    attributes:
+      label: Étapes pour reproduire
+      placeholder: |
+        1. Ouvrir PowerPoint en diaporama
+        2. Cliquer sur « Stylo » dans la barre d'outils
+        3. ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Ce qui se passe, et ce qui était attendu
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Écrans et contexte
+      description: Nombre d'écrans et échelle (100 %, 150 %…), appli concernée, partage Teams/Zoom, PC d'entreprise…
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Captures d'écran
+      description: Glissez-déposez une image si possible. Attention à ne pas montrer d'informations personnelles.

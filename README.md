@@ -1,13 +1,57 @@
 # Clicksy
 
-Effets de pointeur pour formateurs sous Windows 10/11 : spotlight, anneau autour du curseur,
-effets de clic, traînée, pointeur laser et dessin à l'écran, pour les tutos e-learning, les démos
-de logiciels et les classes virtuelles (Teams, Zoom, Meet).
+**Effets de pointeur et enregistrement d'écran pour formateurs, sous Windows 10/11.**
+Spotlight, anneau autour du curseur, effets de clic, pointeur laser, dessin à l'écran, tableau blanc
+et enregistrement vidéo, pour les tutos e-learning, les démos de logiciels et les classes virtuelles
+(Teams, Zoom, Meet).
+
+[![Télécharger Clicksy](https://img.shields.io/github/v/release/Fr-Groot/clicksy?label=T%C3%A9l%C3%A9charger&style=for-the-badge&color=2f7cf6)](https://github.com/Fr-Groot/clicksy/releases/latest)
+![Windows 10/11](https://img.shields.io/badge/Windows-10%20%2F%2011-0078d4?style=for-the-badge)
+![Licence MIT](https://img.shields.io/github/license/Fr-Groot/clicksy?style=for-the-badge&label=Licence)
+
+<p align="center">
+  <img src="docs/images/spotlight.png" alt="Spotlight et anneau autour du curseur sur la fenêtre de réglages de Clicksy" width="640">
+  &nbsp;
+  <img src="docs/images/barre-outils.png" alt="Barre d'outils flottante de Clicksy" height="360">
+</p>
 
 **Aucun appel réseau, aucune télémétrie, aucune touche enregistrée.** Interface en français.
 Fichiers non signés pour l'instant : voir [Signature du code](#signature-du-code).
 
 > Version 0.3.0 : enregistrement vidéo de l'écran, d'une fenêtre ou d'une zone, avec le son du PC et le micro. L'éditeur (aperçu, découpe, export avec effets) suivra en 0.4.
+
+<details>
+<summary><strong>In English</strong></summary>
+
+**Clicksy** is a free, open-source (MIT) Windows 10/11 app for trainers, teachers and presenters.
+It draws effects on top of the screen to guide the audience's attention:
+
+- **Spotlight** (circle or band), **cursor ring**, **click ripples** (left/right colors), **cursor trail**
+  and **laser pointer**;
+- **On-screen drawing**: pen, rectangle, ellipse, arrow, 3 colors, undo — plus a full-screen
+  **whiteboard / blackboard**;
+- A floating **toolbar** that never steals focus (PowerPoint stays in slideshow mode) and can be hidden
+  from screen sharing and captures;
+- **Screen recording** of a screen, window or region, with system audio and microphone, cursor and
+  effects included (or recorded separately for a future editor);
+- **Screenshots** to PNG and clipboard; global hotkeys; command-line actions for Stream Deck.
+
+It makes no network connections, has no telemetry and never stores keystrokes. The interface is in
+French. Download the MSI installer or portable ZIP from the
+[latest release](https://github.com/Fr-Groot/clicksy/releases/latest). Bug reports and ideas are welcome
+in [Issues](https://github.com/Fr-Groot/clicksy/issues), in English or French.
+
+</details>
+
+## Aperçu
+
+| Fenêtre de réglages | Barre d'outils |
+|---|---|
+| ![Réglages de Clicksy, page Général](docs/images/reglages.png) | ![Barre d'outils de Clicksy](docs/images/barre-outils.png) |
+
+Tout s'applique en direct : bouger un curseur de réglage modifie l'effet à l'écran pendant le
+glissement. La barre d'outils donne accès au dessin, au tableau, à la capture, au laser, au spotlight
+et à l'enregistrement vidéo sans retenir de raccourci.
 
 ## Installer
 
