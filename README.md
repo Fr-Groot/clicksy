@@ -7,7 +7,7 @@ de logiciels et les classes virtuelles (Teams, Zoom, Meet).
 **Aucun appel réseau, aucune télémétrie, aucune touche enregistrée.** Interface en français.
 Signature de code : voir la [Code signing policy](#code-signing-policy) (SignPath Foundation).
 
-> Version 0.3 (en préparation) : enregistrement vidéo de l'écran, d'une fenêtre ou d'une zone, avec le son du PC et le micro. L'éditeur (aperçu, découpe, export avec effets) suivra en 0.4.
+> Version 0.3.0 : enregistrement vidéo de l'écran, d'une fenêtre ou d'une zone, avec le son du PC et le micro. L'éditeur (aperçu, découpe, export avec effets) suivra en 0.4.
 
 ## Installer
 
@@ -20,7 +20,7 @@ Deux versions, à télécharger dans l'onglet **Releases** du dépôt :
 
 - **MSI** : installe dans `C:\Program Files\Clicksy`, ajoute Clicksy au menu Démarrer et se désinstalle
   depuis Paramètres › Applications. Les réglages vont dans `%APPDATA%\Clicksy`.
-  Installation silencieuse : `msiexec /i Clicksy_0.2.0_x64_fr-FR.msi /qn`.
+  Installation silencieuse : `msiexec /i Clicksy_0.3.0_x64_fr-FR.msi /qn`.
 - **Portable** : dézipper puis lancer `clicksy.exe`. Les réglages restent dans le dossier `data\` à côté.
 
 Windows peut afficher « Windows a protégé votre ordinateur » : les binaires ne sont **pas encore signés**

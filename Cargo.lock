@@ -333,7 +333,7 @@ dependencies = [
 
 [[package]]
 name = "clicksy"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "crossbeam-channel",
  "fx-audio",
@@ -940,14 +940,14 @@ dependencies = [
 
 [[package]]
 name = "fx-audio"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "windows",
 ]
 
 [[package]]
 name = "fx-bus"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "crossbeam-channel",
  "serde",
@@ -955,7 +955,7 @@ dependencies = [
 
 [[package]]
 name = "fx-core"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "arc-swap",
  "fx-bus",
@@ -965,7 +965,7 @@ dependencies = [
 
 [[package]]
 name = "fx-input"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "fx-bus",
  "fx-core",
@@ -974,7 +974,7 @@ dependencies = [
 
 [[package]]
 name = "fx-overlay"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "fx-bus",
  "fx-core",
@@ -984,7 +984,7 @@ dependencies = [
 
 [[package]]
 name = "fx-record"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "crossbeam-channel",
  "fx-bus",
