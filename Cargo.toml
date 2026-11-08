@@ -14,6 +14,7 @@ fx-core = { path = "crates/fx-core" }
 fx-input = { path = "crates/fx-input" }
 fx-overlay = { path = "crates/fx-overlay" }
 fx-audio = { path = "crates/fx-audio" }
+fx-record = { path = "crates/fx-record" }
 arc-swap = "1.9"
 crossbeam-channel = "0.5"
 serde = { version = "1", features = ["derive"] }

@@ -15,6 +15,7 @@ fx-core.workspace = true
 fx-input.workspace = true
 fx-overlay.workspace = true
 fx-audio.workspace = true
+fx-record.workspace = true
 crossbeam-channel.workspace = true
 serde.workspace = true
 serde_json.workspace = true

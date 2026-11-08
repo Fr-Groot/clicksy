@@ -279,3 +279,113 @@ pub unsafe fn draw_banner(gpu: &Gpu, s: &Surface, text: &str, alpha: f32) -> Res
     dc.DrawTextLayout(v(left + pad_x, top + pad_y), &layout, &gpu.brush, D2D1_DRAW_TEXT_OPTIONS_NONE);
     Ok(())
 }
+
+// ---------------------------------------------------------------- Enregistrement
+
+fn local(s: &Surface, r: [i32; 4]) -> D2D_RECT_F {
+    let (ox, oy) = (s.rect.left as f32, s.rect.top as f32);
+    D2D_RECT_F { left: r[0] as f32 - ox, top: r[1] as f32 - oy, right: r[2] as f32 - ox, bottom: r[3] as f32 - oy }
+}
+
+fn norm(r: [i32; 4]) -> [i32; 4] {
+    [r[0].min(r[2]), r[1].min(r[3]), r[0].max(r[2]), r[1].max(r[3])]
+}
+
+/// Cadre rouge autour de ce qui est enregistré (visible par le formateur seulement).
+pub unsafe fn draw_rec_frame(gpu: &Gpu, s: &Surface, r: [i32; 4]) {
+    let k = s.scale;
+    let mut lr = local(s, r);
+    let w = 3.0 * k;
+    lr.left -= w / 2.0;
+    lr.top -= w / 2.0;
+    lr.right += w / 2.0;
+    lr.bottom += w / 2.0;
+    gpu.brush.SetColor(&D2D1_COLOR_F { r: 0.93, g: 0.16, b: 0.2, a: 0.9 });
+    gpu.dc.DrawRectangle(&lr, &gpu.brush, w, None);
+}
+
+/// Choix de la source : l'écran est voilé, sauf la fenêtre survolée ou la zone tracée.
+pub unsafe fn draw_select(gpu: &Gpu, s: &Surface, f: &Frame, cx: f32, cy: f32) -> Result<()> {
+    let dc = &gpu.dc;
+    let k = s.scale;
+    dc.Clear(Some(&D2D1_COLOR_F { r: 0.0, g: 0.0, b: 0.0, a: 0.42 }));
+    if let Some(r) = f.select_rect {
+        let lr = local(s, norm(r));
+        dc.SetPrimitiveBlend(D2D1_PRIMITIVE_BLEND_COPY);
+        gpu.brush.SetColor(&D2D1_COLOR_F { r: 0.0, g: 0.0, b: 0.0, a: 0.0 });
+        dc.FillRectangle(&lr, &gpu.brush);
+        dc.SetPrimitiveBlend(D2D1_PRIMITIVE_BLEND_SOURCE_OVER);
+        gpu.brush.SetColor(&D2D1_COLOR_F { r: 0.18, g: 0.49, b: 0.96, a: 1.0 });
+        dc.DrawRectangle(&lr, &gpu.brush, 2.5 * k, None);
+        // Dimensions de la zone, utiles pour viser un format.
+        let [l, t, r2, b] = norm(r);
+        let label = format!("{} × {}", r2 - l, b - t);
+        draw_tag(gpu, s, &label, lr.left, lr.top - 26.0 * k)?;
+    } else if f.select == 2 && s.contains(f.cursor.0, f.cursor.1) {
+        // Zone : réticule pour viser le premier coin.
+        gpu.brush.SetColor(&D2D1_COLOR_F { r: 1.0, g: 1.0, b: 1.0, a: 0.7 });
+        dc.DrawLine(v(cx, 0.0), v(cx, s.height()), &gpu.brush, 1.0, None);
+        dc.DrawLine(v(0.0, cy), v(s.width(), cy), &gpu.brush, 1.0, None);
+    }
+    Ok(())
+}
+
+/// Grand chiffre au centre de ce qui va être enregistré.
+pub unsafe fn draw_countdown(gpu: &Gpu, s: &Surface, n: u32, r: [i32; 4]) -> Result<()> {
+    let lr = local(s, r);
+    let (cx, cy) = ((lr.left + lr.right) / 2.0, (lr.top + lr.bottom) / 2.0);
+    if cx < 0.0 || cy < 0.0 || cx > s.width() || cy > s.height() {
+        return Ok(());
+    }
+    let k = s.scale;
+    let dc = &gpu.dc;
+    gpu.brush.SetColor(&D2D1_COLOR_F { r: 0.08, g: 0.08, b: 0.1, a: 0.78 });
+    dc.FillEllipse(&ellipse(cx, cy, 70.0 * k), &gpu.brush);
+    gpu.brush.SetColor(&D2D1_COLOR_F { r: 0.93, g: 0.16, b: 0.2, a: 1.0 });
+    dc.DrawEllipse(&ellipse(cx, cy, 70.0 * k), &gpu.brush, 4.0 * k, None);
+    let format = gpu.dwrite.CreateTextFormat(
+        w!("Segoe UI"),
+        None,
+        DWRITE_FONT_WEIGHT_SEMI_BOLD,
+        DWRITE_FONT_STYLE_NORMAL,
+        DWRITE_FONT_STRETCH_NORMAL,
+        72.0 * k,
+        w!("fr-FR"),
+    )?;
+    format.SetTextAlignment(DWRITE_TEXT_ALIGNMENT_CENTER)?;
+    format.SetParagraphAlignment(DWRITE_PARAGRAPH_ALIGNMENT_CENTER)?;
+    let text: Vec<u16> = n.to_string().encode_utf16().collect();
+    let box_ = D2D_RECT_F { left: cx - 70.0 * k, top: cy - 75.0 * k, right: cx + 70.0 * k, bottom: cy + 65.0 * k };
+    gpu.brush.SetColor(&D2D1_COLOR_F { r: 1.0, g: 1.0, b: 1.0, a: 1.0 });
+    dc.DrawText(&text, &format, &box_, &gpu.brush, D2D1_DRAW_TEXT_OPTIONS_NONE, DWRITE_MEASURING_MODE_NATURAL);
+    Ok(())
+}
+
+/// Petite étiquette sombre (dimensions de la zone).
+unsafe fn draw_tag(gpu: &Gpu, s: &Surface, text: &str, x: f32, y: f32) -> Result<()> {
+    let k = s.scale;
+    let format = gpu.dwrite.CreateTextFormat(
+        w!("Segoe UI"),
+        None,
+        DWRITE_FONT_WEIGHT_SEMI_BOLD,
+        DWRITE_FONT_STYLE_NORMAL,
+        DWRITE_FONT_STRETCH_NORMAL,
+        12.0 * k,
+        w!("fr-FR"),
+    )?;
+    let wide: Vec<u16> = text.encode_utf16().collect();
+    let layout = gpu.dwrite.CreateTextLayout(&wide, &format, 400.0 * k, 40.0 * k)?;
+    let mut m = DWRITE_TEXT_METRICS::default();
+    layout.GetMetrics(&mut m)?;
+    let y = y.max(4.0 * k);
+    let rr = D2D1_ROUNDED_RECT {
+        rect: D2D_RECT_F { left: x, top: y, right: x + m.width + 14.0 * k, bottom: y + m.height + 6.0 * k },
+        radiusX: 4.0 * k,
+        radiusY: 4.0 * k,
+    };
+    gpu.brush.SetColor(&D2D1_COLOR_F { r: 0.18, g: 0.49, b: 0.96, a: 1.0 });
+    gpu.dc.FillRoundedRectangle(&rr, &gpu.brush);
+    gpu.brush.SetColor(&D2D1_COLOR_F { r: 1.0, g: 1.0, b: 1.0, a: 1.0 });
+    gpu.dc.DrawTextLayout(v(x + 7.0 * k, y + 3.0 * k), &layout, &gpu.brush, D2D1_DRAW_TEXT_OPTIONS_NONE);
+    Ok(())
+}

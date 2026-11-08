@@ -1,0 +1,16 @@
+[package]
+name = "fx-record"
+description = "Enregistrement d'écran de Clicksy : vidéo, son système, micro, journal du curseur."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+fx-bus.workspace = true
+fx-core.workspace = true
+windows.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+windows-capture = "2"
+wasapi = "0.27"
+crossbeam-channel.workspace = true

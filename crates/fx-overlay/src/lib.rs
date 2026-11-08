@@ -142,7 +142,9 @@ unsafe fn render_thread(shared: Arc<Shared>) {
 
         // 4. Sommeil jusqu'au prochain réveil (souris, config) ou message.
         // Délai de 2 s pour réaffirmer périodiquement le premier plan.
-        let _ = MsgWaitForMultipleObjects(Some(&[wake]), false, 2000, QS_ALLINPUT);
+        // Pendant un enregistrement, réveil 4 fois par seconde pour le chrono de la barre.
+        let timeout = if shared.modes.recording.load(Ordering::Acquire) { 250 } else { 2000 };
+        let _ = MsgWaitForMultipleObjects(Some(&[wake]), false, timeout, QS_ALLINPUT);
     }
 
     toolbar::destroy(&shared);
@@ -180,12 +182,18 @@ unsafe fn render_frame(
     let laser = shared.modes.laser.load(Ordering::Acquire);
     let board = shared.modes.board.load(Ordering::Acquire);
     let board_pt = (shared.modes.board_x.load(Ordering::Acquire), shared.modes.board_y.load(Ordering::Acquire));
+    let select = shared.modes.select.load(Ordering::Acquire);
+    let recording = shared.modes.recording.load(Ordering::Acquire);
+    // Pendant un enregistrement, la surcouche n'apparaît pas dans la vidéo.
+    for s in surfaces.iter_mut() {
+        s.set_excluded(recording);
+    }
 
     let mut pt = POINT::default();
     let _ = GetCursorPos(&mut pt);
     let scale = surfaces.iter().find(|s| s.contains(pt.x, pt.y)).map(|s| s.scale).unwrap_or(1.0);
 
-    let (ripples, held, draw_tool, draw_color, banner, color_index, draw_width) = {
+    let (ripples, held, draw_tool, draw_color, banner, color_index, draw_width, zone, countdown, rec) = {
         let mut fx = shared.fx.lock().unwrap();
         let dur = Duration::from_millis(cfg.clicks.duration_ms as u64);
         fx.ripples.retain(|r| now.saturating_duration_since(r.start) < dur);
@@ -199,7 +207,12 @@ unsafe fn render_frame(
         }
         let color = cfg.draw.colors[d.color_index.min(2)];
         let banner = fx.banner.as_ref().map(|b| (b.text.clone(), now.saturating_duration_since(b.start).as_secs_f32() * 1000.0));
-        (fx.ripples.clone(), fx.held, d.tool, color, banner, d.color_index, d.width)
+        let countdown = fx.countdown.map(|(start, r)| {
+            let left = 3.0 - now.saturating_duration_since(start).as_secs_f32();
+            (left.ceil().max(1.0) as u32, r)
+        });
+        (fx.ripples.clone(), fx.held, d.tool, color, banner, d.color_index, d.width, fx.select_rect, countdown, fx.rec)
+
     };
     // Fondu d'entrée (120 ms) et de sortie (400 ms) de la bulle.
     let banner = banner.map(|(t, ms)| {
@@ -251,10 +264,14 @@ unsafe fn render_frame(
         banner: banner.as_ref().map(|(t, a)| (t.as_str(), *a)),
         board,
         board_pt,
+        select,
+        select_rect: if select == 1 { hovered_window(pt) } else { zone },
+        countdown,
+        rec_rect: rec.map(|r| r.1),
     };
 
     // Le contenu « statique » dépend de la config et des formes dessinées.
-    let token = (Arc::as_ptr(&cfg_guard) as usize).wrapping_mul(31).wrapping_add(st.shapes_gen as usize).wrapping_add((board as usize) << 40);
+    let token = (Arc::as_ptr(&cfg_guard) as usize).wrapping_mul(31).wrapping_add(st.shapes_gen as usize).wrapping_add((board as usize) << 40).wrapping_add((rec.is_some() as usize) << 44);
     let mut presented = false;
     for s in surfaces.iter_mut() {
         let dynamic = draw::is_dynamic(s, &frame);
@@ -269,10 +286,21 @@ unsafe fn render_frame(
     }
 
     // Barre d'outils (créée, mise à jour ou masquée selon la config).
-    let view = toolbar::View { draw_mode, tool: draw_tool, color_index, width: draw_width, laser, board };
+    let view = toolbar::View {
+        draw_mode,
+        tool: draw_tool,
+        color_index,
+        width: draw_width,
+        laser,
+        board,
+        recording,
+        rec_secs: rec.map(|r| now.saturating_duration_since(r.0).as_secs()),
+        countdown: countdown.is_some(),
+    };
     presented |= toolbar::sync(gpu, shared, cfg, &view)?;
 
-    let animating = (cfg.enabled && (!ripples.is_empty() || (cfg.ring.enabled && cfg.ring.pulse && !laser && !draw_mode)))
+    let animating = countdown.is_some()
+        || (cfg.enabled && (!ripples.is_empty() || (cfg.ring.enabled && cfg.ring.pulse && !laser && !draw_mode)))
         || trail.len() >= 2
         || banner.is_some();
     Ok((presented, animating))
@@ -345,4 +373,23 @@ unsafe extern "system" fn on_foreground(
     _time: u32,
 ) {
     RAISE.store(true, Ordering::Release);
+}
+
+/// Fenêtre principale sous le curseur (hors Clicksy), pour le choix « fenêtre ».
+fn hovered_window(pt: POINT) -> Option<[i32; 4]> {
+    use windows::Win32::Graphics::Dwm::{DwmGetWindowAttribute, DWMWA_EXTENDED_FRAME_BOUNDS};
+    unsafe {
+        let hwnd = GetAncestor(WindowFromPoint(pt), GA_ROOT);
+        if hwnd.is_invalid() {
+            return None;
+        }
+        let mut pid = 0u32;
+        GetWindowThreadProcessId(hwnd, Some(&mut pid));
+        if pid == GetCurrentProcessId() {
+            return None;
+        }
+        let mut r = RECT::default();
+        DwmGetWindowAttribute(hwnd, DWMWA_EXTENDED_FRAME_BOUNDS, &mut r as *mut _ as *mut _, std::mem::size_of::<RECT>() as u32).ok()?;
+        Some([r.left, r.top, r.right, r.bottom])
+    }
 }

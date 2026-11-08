@@ -50,6 +50,7 @@ enum Btn {
     Clear,
     White,
     Black,
+    Record,
     Capture,
     Laser,
     Spot,
@@ -70,6 +71,7 @@ impl Btn {
             Btn::Clear => "Effacer",
             Btn::White => "Blanc",
             Btn::Black => "Noir",
+            Btn::Record => "Vidéo",
             Btn::Capture => "Capture",
             Btn::Laser => "Laser",
             Btn::Spot => "Spot",
@@ -90,6 +92,8 @@ impl Btn {
             Btn::Clear => Action::ClearDrawings,
             Btn::White => Action::SetBoard(1),
             Btn::Black => Action::SetBoard(2),
+            // Géré à part (menu de choix de la source), voir `record_click`.
+            Btn::Record => Action::RecordStop,
             Btn::Capture => Action::Screenshot,
             Btn::Laser => Action::ToggleLaser,
             Btn::Spot => Action::ToggleSpotlight,
@@ -138,7 +142,9 @@ fn layout() -> (Vec<(Hit, D2D_RECT_F)>, Vec<f32>, f32) {
     pair(&mut items, &mut y, Btn::Spot, Btn::Laser);
     seps.push(y + SEP_H / 2.0);
     y += SEP_H;
-    pair(&mut items, &mut y, Btn::Capture, Btn::Settings);
+    pair(&mut items, &mut y, Btn::Record, Btn::Capture);
+    items.push((Hit::Btn(Btn::Settings), rect(PAD, y, W - PAD, y + BTN_H)));
+    y += BTN_H;
     y += PAD;
     (items, seps, y)
 }
@@ -212,6 +218,10 @@ pub struct View {
     pub width: f32,
     pub laser: bool,
     pub board: u8,
+    pub recording: bool,
+    /// Durée de l'enregistrement en cours, en secondes.
+    pub rec_secs: Option<u64>,
+    pub countdown: bool,
 }
 
 /// Crée, met à jour ou supprime la barre selon la config, puis la redessine si besoin.
@@ -236,9 +246,11 @@ pub fn sync(gpu: &Gpu, shared: &Shared, cfg: &Config, view: &View) -> Result<boo
     TB.with(|t| {
         let mut b = t.borrow_mut();
         let tb = b.as_mut().unwrap();
-        if tb.excluded != cfg.toolbar.hide_from_capture {
-            unsafe { set_excluded(tb.hwnd, cfg.toolbar.hide_from_capture) };
-            tb.excluded = cfg.toolbar.hide_from_capture;
+        // Toujours exclue pendant un enregistrement vidéo.
+        let exclude = cfg.toolbar.hide_from_capture || view.recording;
+        if tb.excluded != exclude {
+            unsafe { set_excluded(tb.hwnd, exclude) };
+            tb.excluded = exclude;
         }
         let sig = signature(tb, cfg, view);
         if sig == tb.drawn_sig {
@@ -254,6 +266,7 @@ fn signature(tb: &Toolbar, cfg: &Config, v: &View) -> u64 {
     let mut h = std::collections::hash_map::DefaultHasher::new();
     (tb.hover, tb.pressed, tb.scale.to_bits(), v.draw_mode, v.tool as u8, v.color_index, v.width.to_bits()).hash(&mut h);
     (v.laser, v.board, cfg.spotlight.mode as u8, cfg.spotlight.shape as u8).hash(&mut h);
+    (v.recording, v.rec_secs, v.countdown).hash(&mut h);
     for c in &cfg.draw.colors {
         c.to_hex().hash(&mut h);
     }
@@ -383,6 +396,7 @@ fn v(x: f32, y: f32) -> Vector2 {
 
 const WHITE: D2D1_COLOR_F = D2D1_COLOR_F { r: 1.0, g: 1.0, b: 1.0, a: 0.92 };
 const ACCENT: Color = Color::rgba8(0x2F, 0x7C, 0xF6, 255);
+const REC_RED: Color = Color::rgba8(0xE5, 0x2B, 0x35, 255);
 
 fn is_active(b: Btn, cfg: &Config, v: &View) -> bool {
     match b {
@@ -393,6 +407,7 @@ fn is_active(b: Btn, cfg: &Config, v: &View) -> bool {
         Btn::Arrow => v.draw_mode && v.tool == DrawTool::Arrow,
         Btn::White => v.board == 1,
         Btn::Black => v.board == 2,
+        Btn::Record => v.recording || v.countdown,
         Btn::Laser => v.laser,
         Btn::Spot => cfg.spotlight.mode != SpotlightMode::Off,
         _ => false,
@@ -465,7 +480,8 @@ unsafe fn paint(gpu: &Gpu, tb: &Toolbar, cfg: &Config, view: &View) -> Result<()
             Hit::Btn(b) => {
                 let active = is_active(*b, cfg, view);
                 if active {
-                    gpu.brush.SetColor(&d2d(ACCENT.with_alpha(if pressed { 0.75 } else { 0.95 })));
+                    let accent = if *b == Btn::Record { REC_RED } else { ACCENT };
+                    gpu.brush.SetColor(&d2d(accent.with_alpha(if pressed { 0.75 } else { 0.95 })));
                     dc.FillRoundedRectangle(&cell, &gpu.brush);
                 } else if hovered {
                     gpu.brush.SetColor(&D2D1_COLOR_F { r: 1.0, g: 1.0, b: 1.0, a: if pressed { 0.18 } else { 0.09 } });
@@ -479,7 +495,13 @@ unsafe fn paint(gpu: &Gpu, tb: &Toolbar, cfg: &Config, view: &View) -> Result<()
                 }
                 let icon_y = r.top + 19.0;
                 draw_icon(gpu, *b, cx, icon_y, cfg, view);
-                let label: Vec<u16> = b.label().encode_utf16().collect();
+                // Le bouton vidéo affiche le chrono pendant l'enregistrement.
+                let text = match (*b, view.rec_secs, view.countdown) {
+                    (Btn::Record, Some(s), _) => format!("{}:{:02}", s / 60, s % 60),
+                    (Btn::Record, None, true) => "Annuler".to_string(),
+                    _ => b.label().to_string(),
+                };
+                let label: Vec<u16> = text.encode_utf16().collect();
                 let lr = D2D_RECT_F { left: r.left, top: r.top + 31.0, right: r.right, bottom: r.bottom - 3.0 };
                 gpu.brush.SetColor(&D2D1_COLOR_F { r: 1.0, g: 1.0, b: 1.0, a: if active { 1.0 } else { 0.78 } });
                 dc.DrawText(&label, &tb.label_format, &lr, &gpu.brush, D2D1_DRAW_TEXT_OPTIONS_NONE, DWRITE_MEASURING_MODE_NATURAL);
@@ -573,6 +595,18 @@ unsafe fn draw_icon(gpu: &Gpu, b: Btn, cx: f32, cy: f32, cfg: &Config, view: &Vi
             dc.DrawRectangle(&r, br, lw, st);
             line((-4.0, 4.0), (-6.5, 8.5), lw);
             line((4.0, 4.0), (6.5, 8.5), lw);
+        }
+        Btn::Record => {
+            if view.recording || view.countdown {
+                // Carré « stop ».
+                let r = D2D_RECT_F { left: cx - 5.5, top: cy - 5.5, right: cx + 5.5, bottom: cy + 5.5 };
+                dc.FillRectangle(&r, br);
+            } else {
+                br.SetColor(&d2d(REC_RED));
+                dc.FillEllipse(&D2D1_ELLIPSE { point: v(cx, cy), radiusX: 6.5, radiusY: 6.5 }, br);
+                br.SetColor(&WHITE);
+                dc.DrawEllipse(&D2D1_ELLIPSE { point: v(cx, cy), radiusX: 9.0, radiusY: 9.0 }, br, 1.4, st);
+            }
         }
         Btn::Capture => {
             let body = D2D1_ROUNDED_RECT {
@@ -753,7 +787,11 @@ unsafe extern "system" fn wnd_proc(hwnd: HWND, msg: u32, wparam: WPARAM, lparam:
                 }
             }
             if let Some(a) = action {
-                fx_bus::action(a);
+                if a == Action::RecordStop {
+                    record_click(hwnd);
+                } else {
+                    fx_bus::action(a);
+                }
             }
             request_paint();
             LRESULT(0)
@@ -796,4 +834,46 @@ unsafe fn move_to(hwnd: HWND, x: i32, y: i32, snap: bool) -> Option<(i32, i32)> 
         s.wake();
     }
     Some((nx, ny))
+}
+
+/// Bouton « Vidéo » : arrête l'enregistrement en cours, sinon propose la source.
+unsafe fn record_click(hwnd: HWND) {
+    let Some(shared) = shared() else { return };
+    let busy = shared.modes.recording.load(Ordering::Acquire) || shared.fx.lock().unwrap().countdown.is_some();
+    if busy {
+        fx_bus::action(Action::RecordStop);
+        return;
+    }
+    let cfg = shared.config.load_full();
+    let Ok(menu) = CreatePopupMenu() else { return };
+    let add = |id: usize, text: &str, checked: bool| {
+        let wide: Vec<u16> = text.encode_utf16().chain(std::iter::once(0)).collect();
+        let flags = if checked { MF_STRING | MF_CHECKED } else { MF_STRING };
+        let _ = AppendMenuW(menu, flags, id, PCWSTR(wide.as_ptr()));
+    };
+    add(1, "Enregistrer l'écran entier", false);
+    add(2, "Enregistrer une fenêtre…", false);
+    add(3, "Enregistrer une zone…", false);
+    let _ = AppendMenuW(menu, MF_SEPARATOR, 0, None);
+    add(4, "Son du PC", cfg.record.system_audio);
+    add(5, "Micro", cfg.record.mic);
+    let _ = AppendMenuW(menu, MF_SEPARATOR, 0, None);
+    add(6, "Ouvrir le dossier des vidéos", false);
+
+    let mut pt = POINT::default();
+    let _ = GetCursorPos(&mut pt);
+    // Le menu a besoin du premier plan le temps du choix (seul moment où la barre prend le focus).
+    let _ = SetForegroundWindow(hwnd);
+    let cmd = TrackPopupMenu(menu, TPM_RETURNCMD | TPM_RIGHTBUTTON, pt.x, pt.y, None, hwnd, None);
+    let _ = PostMessageW(Some(hwnd), WM_NULL, WPARAM(0), LPARAM(0));
+    let _ = DestroyMenu(menu);
+    match cmd.0 {
+        1 => fx_bus::action(Action::RecordStart(fx_bus::RecordTarget::Screen)),
+        2 => fx_bus::action(Action::RecordPick(1)),
+        3 => fx_bus::action(Action::RecordPick(2)),
+        4 => fx_bus::action(Action::ToggleRecordAudio(0)),
+        5 => fx_bus::action(Action::ToggleRecordAudio(1)),
+        6 => fx_bus::action(Action::OpenVideosFolder),
+        _ => {}
+    }
 }

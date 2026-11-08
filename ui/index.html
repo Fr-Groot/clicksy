@@ -23,7 +23,7 @@
       <a href="#trail">Traînée &amp; laser</a>
       <a href="#draw">Dessin</a>
       <a href="#hotkeys">Raccourcis</a>
-      <a href="#record" class="soon">Enregistrement <em>bientôt</em></a>
+      <a href="#record">Enregistrement</a>
     </nav>
     <div class="sidebar-foot">
       <label class="switch big" title="Ctrl+Alt+Maj+A">
@@ -342,6 +342,10 @@
           <div class="row-text"><strong>Afficher / masquer la barre d'outils</strong></div>
           <input class="hotkey" data-path="hotkeys.toggle_toolbar" readonly>
         </div>
+        <div class="row">
+          <div class="row-text"><strong>Enregistrer / arrêter la vidéo</strong></div>
+          <input class="hotkey" data-path="hotkeys.toggle_record" readonly>
+        </div>
       </div>
       <p class="warn" id="hk-warn" hidden></p>
       <p class="note">Conseil : garde <kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>Maj</kbd>. Sur un clavier AZERTY, <kbd>Ctrl</kbd> + <kbd>Alt</kbd> seul équivaut à <kbd>AltGr</kbd> et peut bloquer des caractères comme @ ou #.</p>
@@ -350,8 +354,35 @@
     <section id="record" class="page">
       <h1>Enregistrement</h1>
       <p class="lead">Capture de l'écran entier, d'une fenêtre ou d'une zone, avec le son du PC et le micro, puis un éditeur (zooms sur les clics, fond, découpe).</p>
-      <div class="card empty">
-        <p>En préparation : ce sera la prochaine grande étape de Clicksy.</p>
+      <div class="card help">
+        <div class="row">
+          <div class="row-text"><strong>Comment enregistrer</strong><span>Bouton <strong>Vidéo</strong> de la barre d'outils (écran entier, fenêtre ou zone), ou <kbd data-hk="toggle_record"></kbd> pour l'écran de la souris. Le même bouton ou raccourci arrête. Le curseur et les effets ne sont pas « gravés » dans la vidéo : ils sont notés à part pour être réglés après coup dans l'éditeur (prochaine version).</span></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="row">
+          <div class="row-text"><strong>Son du PC</strong><span>Ce que jouent les applications (vidéo, alertes…).</span></div>
+          <label class="switch"><input type="checkbox" data-path="record.system_audio"><span class="track"></span></label>
+        </div>
+        <div class="row">
+          <div class="row-text"><strong>Micro</strong><span>Micro par défaut de Windows, sur une piste séparée.</span></div>
+          <label class="switch"><input type="checkbox" data-path="record.mic"><span class="track"></span></label>
+        </div>
+        <div class="row stack">
+          <div class="row-text"><strong>Images par seconde</strong><span>30 suffit pour un tuto ; 60 pour des animations fluides (fichiers plus lourds).</span></div>
+          <div class="segmented" data-path="record.fps" data-number>
+            <button data-value="30">30 i/s</button>
+            <button data-value="60">60 i/s</button>
+          </div>
+        </div>
+        <div class="row">
+          <div class="row-text"><strong>Compte à rebours de 3 secondes</strong></div>
+          <label class="switch"><input type="checkbox" data-path="record.countdown"><span class="track"></span></label>
+        </div>
+        <div class="row">
+          <div class="row-text"><strong>Ouvrir le dossier à la fin</strong><span>Chaque enregistrement crée un dossier dans Vidéos &rsaquo; Clicksy.</span></div>
+          <label class="switch"><input type="checkbox" data-path="record.open_folder_after"><span class="track"></span></label>
+        </div>
       </div>
     </section>
   </main>

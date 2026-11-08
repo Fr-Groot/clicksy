@@ -76,7 +76,8 @@ unsafe extern "system" fn mouse_proc(code: i32, wparam: WPARAM, lparam: LPARAM) 
             let info = &*(lparam.0 as *const MSLLHOOKSTRUCT);
             let (x, y) = (info.pt.x, info.pt.y);
             let msg = wparam.0 as u32;
-            let drawing = ctx.shared.modes.draw.load(Ordering::Relaxed);
+            // Mode dessin ou choix de la source d'enregistrement : les clics nous appartiennent.
+            let drawing = ctx.shared.modes.draw.load(Ordering::Relaxed) || ctx.shared.modes.select.load(Ordering::Relaxed) != 0;
             match msg {
                 WM_MOUSEMOVE => {
                     ctx.shared.wake();
@@ -154,7 +155,9 @@ unsafe extern "system" fn keyboard_proc(code: i32, wparam: WPARAM, lparam: LPARA
                     return LRESULT(1);
                 }
                 // Mode dessin : les touches d'outils ne partent pas dans l'app active.
-                if ctx.shared.modes.draw.load(Ordering::Relaxed) && is_draw_key(vk) {
+                if ctx.shared.modes.draw.load(Ordering::Relaxed) && is_draw_key(vk)
+                    || (ctx.shared.modes.select.load(Ordering::Relaxed) != 0 && vk == 0x1B)
+                {
                     return LRESULT(1);
                 }
             }
@@ -189,6 +192,7 @@ fn match_hotkey(ctx: &Ctx, vk: u32) -> Option<Action> {
         (hk.toggle_toolbar, Action::ToggleToolbar),
         (hk.cycle_board, Action::CycleBoard),
         (hk.screenshot, Action::Screenshot),
+        (hk.toggle_record, Action::ToggleRecord),
     ];
     table.into_iter().find(|(h, _)| *h == Some(pressed)).map(|(_, a)| a)
 }

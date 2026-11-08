@@ -14,9 +14,11 @@ const MOCK = {
   show_banner: true,
   toolbar: { visible: true, hide_from_capture: true, x: null, y: null },
   capture: { folder: "", copy_to_clipboard: true },
+  record: { system_audio: true, mic: true, fps: 30, countdown: true, folder: "", open_folder_after: true },
   hotkeys: { toggle_all: "Ctrl+Alt+Maj+A", cycle_spotlight: "Ctrl+Alt+Maj+S", toggle_ring: "Ctrl+Alt+Maj+R", toggle_clicks: "Ctrl+Alt+Maj+C",
              toggle_draw: "Ctrl+Alt+Maj+D", toggle_laser: "Ctrl+Alt+Maj+L", toggle_trail: "Ctrl+Alt+Maj+T",
-             toggle_toolbar: "Ctrl+Alt+Maj+O", cycle_board: "Ctrl+Alt+Maj+W", screenshot: "Ctrl+Alt+Maj+P" },
+             toggle_toolbar: "Ctrl+Alt+Maj+O", cycle_board: "Ctrl+Alt+Maj+W", screenshot: "Ctrl+Alt+Maj+P",
+             toggle_record: "Ctrl+Alt+Maj+E" },
 };
 const api = TAURI
   ? {
@@ -77,7 +79,7 @@ function render() {
   document.querySelectorAll("[data-path]").forEach((el) => {
     const v = getPath(cfg, el.dataset.path);
     if (el.classList.contains("segmented")) {
-      el.querySelectorAll("button").forEach((b) => b.classList.toggle("on", b.dataset.value === v));
+      el.querySelectorAll("button").forEach((b) => b.classList.toggle("on", b.dataset.value === String(v)));
     } else if (el.type === "checkbox") {
       el.checked = !!v;
     } else if (el.type === "range") {
@@ -128,7 +130,7 @@ function bind() {
       el.addEventListener("click", (e) => {
         const b = e.target.closest("button");
         if (!b) return;
-        setPath(cfg, path, b.dataset.value);
+        setPath(cfg, path, el.hasAttribute("data-number") ? Number(b.dataset.value) : b.dataset.value);
         // Changer de forme pendant que le spotlight est allumé : la nouvelle forme s'affiche tout de suite.
         if (path === "spotlight.shape" && cfg.spotlight.mode !== "Off") cfg.spotlight.mode = b.dataset.value;
         render();

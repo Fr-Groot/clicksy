@@ -34,6 +34,7 @@ const ID_DRAW: usize = 34;
 const ID_TOOLBAR: usize = 35;
 const ID_BOARD: usize = 36;
 const ID_CAPTURE: usize = 37;
+const ID_RECORD: usize = 38;
 const ID_OPEN_DIR: usize = 40;
 const ID_RELOAD: usize = 41;
 const ID_QUIT: usize = 99;
@@ -83,7 +84,7 @@ pub fn shutdown() {
 
 /// Actions déclenchables en ligne de commande (`clicksy.exe --action dessin`),
 /// par exemple depuis un Stream Deck ou un script. 0 = ouvrir les réglages.
-pub const CLI_ACTIONS: [(&str, fn() -> Action); 14] = [
+pub const CLI_ACTIONS: [(&str, fn() -> Action); 15] = [
     ("tout", || Action::ToggleAll),
     ("spotlight", || Action::ToggleSpotlight),
     ("anneau", || Action::ToggleRing),
@@ -98,6 +99,7 @@ pub const CLI_ACTIONS: [(&str, fn() -> Action); 14] = [
     ("noir", || Action::SetBoard(2)),
     ("capture", || Action::Screenshot),
     ("barre", || Action::ToggleToolbar),
+    ("video", || Action::ToggleRecord),
 ];
 
 /// Code (1-based) d'une action nommée, pour [`signal_running_instance`].
@@ -329,6 +331,8 @@ unsafe fn show_menu(hwnd: HWND) {
     append(menu, ID_DRAW, &hk_label("Mode dessin", cfg.hotkeys.toggle_draw), modes.draw.load(Ordering::Acquire), true);
     append(menu, ID_BOARD, &hk_label("Tableau blanc / noir", cfg.hotkeys.cycle_board), modes.board.load(Ordering::Acquire) != 0, true);
     append(menu, ID_CAPTURE, &hk_label("Capture d'écran", cfg.hotkeys.screenshot), false, true);
+    let rec_label = if modes.recording.load(Ordering::Acquire) { "Arrêter l'enregistrement" } else { "Enregistrer l'écran" };
+    append(menu, ID_RECORD, &hk_label(rec_label, cfg.hotkeys.toggle_record), modes.recording.load(Ordering::Acquire), true);
     append(menu, ID_TOOLBAR, &hk_label("Barre d'outils", cfg.hotkeys.toggle_toolbar), cfg.toolbar.visible, true);
     let _ = AppendMenuW(menu, MF_SEPARATOR, 0, None);
     append(menu, ID_OPEN_DIR, "Ouvrir le dossier de configuration", false, true);
@@ -368,6 +372,7 @@ unsafe fn show_menu(hwnd: HWND) {
         ID_DRAW => fx_bus::action(Action::ToggleDraw),
         ID_BOARD => fx_bus::action(Action::CycleBoard),
         ID_CAPTURE => fx_bus::action(Action::Screenshot),
+        ID_RECORD => fx_bus::action(Action::ToggleRecord),
         ID_TOOLBAR => fx_bus::action(Action::ToggleToolbar),
         ID_RELOAD => fx_bus::action(Action::ReloadConfig),
         ID_OPEN_DIR => open_data_dir(),

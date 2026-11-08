@@ -53,8 +53,29 @@ pub enum Action {
     OpenSettings,
     /// La barre d'outils a été déplacée (coin haut-gauche, pixels physiques).
     ToolbarMoved { x: i32, y: i32 },
+    /// Enregistrer : démarre (après compte à rebours) ou, pour fenêtre/zone, passe en sélection.
+    RecordStart(RecordTarget),
+    /// Choisir la source à la souris : 1 fenêtre, 2 zone.
+    RecordPick(u8),
+    /// Fin du compte à rebours : l'enregistrement démarre vraiment.
+    RecordGo(RecordTarget),
+    RecordStop,
+    /// Raccourci : arrête si on enregistre, sinon enregistre l'écran de la souris.
+    ToggleRecord,
+    /// Active/désactive une piste son pour les prochains enregistrements (0 PC, 1 micro).
+    ToggleRecordAudio(u8),
+    OpenVideosFolder,
     ReloadConfig,
     Quit,
+}
+
+/// Source d'un enregistrement (poignées Win32 en entiers, coordonnées bureau en pixels physiques).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum RecordTarget {
+    /// L'écran où se trouve la souris.
+    Screen,
+    Window { hwnd: isize },
+    Region { left: i32, top: i32, right: i32, bottom: i32 },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]

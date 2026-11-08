@@ -71,6 +71,12 @@ pub struct FxState {
     pub held: [bool; 3],
     pub draw: DrawState,
     pub banner: Option<Banner>,
+    /// Compte à rebours avant enregistrement : début, et rectangle visé (bureau).
+    pub countdown: Option<(Instant, [i32; 4])>,
+    /// Zone en cours de tracé (sélection « zone ») : [gauche, haut, droite, bas].
+    pub select_rect: Option<[i32; 4]>,
+    /// Enregistrement en cours : début et rectangle enregistré (pour le cadre rouge).
+    pub rec: Option<(Instant, [i32; 4])>,
 }
 
 /// Modes temporaires (non enregistrés), lus sans verrou par les hooks.
@@ -87,6 +93,10 @@ pub struct Modes {
     pub toolbar_rect: [AtomicI32; 4],
     /// La barre d'outils suit la souris (déplacement en cours).
     pub toolbar_drag: AtomicBool,
+    /// Enregistrement vidéo en cours : la surcouche est alors exclue de la capture.
+    pub recording: AtomicBool,
+    /// Choix de la source à la souris : 0 aucun, 1 fenêtre, 2 zone.
+    pub select: AtomicU8,
 }
 
 impl Modes {

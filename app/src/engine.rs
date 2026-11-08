@@ -27,6 +27,28 @@ pub fn start(shared: Arc<Shared>, rx: Receiver<Event>, on_config_changed: impl F
             let mut keys = Keys::default();
             for ev in rx {
                 let drawing = shared.modes.draw.load(Ordering::Relaxed);
+                // Choix de la source d'enregistrement : la souris sert à désigner fenêtre ou zone.
+                if shared.modes.select.load(Ordering::Relaxed) != 0 {
+                    match ev.kind {
+                        EventKind::MouseDown { button, x, y } if !shared.modes.on_toolbar(x, y) => {
+                            crate::recorder::on_select_mouse(&shared, button, x, y, true);
+                            continue;
+                        }
+                        EventKind::MouseUp { button, x, y } if !shared.modes.on_toolbar(x, y) => {
+                            crate::recorder::on_select_mouse(&shared, button, x, y, false);
+                            continue;
+                        }
+                        EventKind::MouseMove { x, y } => {
+                            crate::recorder::on_select_move(&shared, x, y);
+                            continue;
+                        }
+                        EventKind::KeyDown { vk, injected: false, .. } => {
+                            crate::recorder::on_select_key(&shared, vk);
+                            continue;
+                        }
+                        _ => {}
+                    }
+                }
                 // Les clics sur la barre d'outils lui appartiennent : ni onde, ni trait.
                 if let EventKind::MouseDown { x, y, .. } | EventKind::MouseUp { x, y, .. } = ev.kind {
                     if shared.modes.on_toolbar(x, y) {
@@ -351,7 +373,7 @@ fn on_off(b: bool) -> &'static str {
 }
 
 /// Applique une action. Renvoie `true` si la configuration ou un mode a changé.
-fn apply(shared: &Shared, action: Action) -> bool {
+fn apply(shared: &Arc<Shared>, action: Action) -> bool {
     match action {
         Action::Quit => return false,
         Action::ReloadConfig => {
@@ -401,6 +423,36 @@ fn apply(shared: &Shared, action: Action) -> bool {
             set_board(shared, n.min(2));
             return true;
         }
+        Action::RecordStart(t) => {
+            crate::recorder::start(shared, t);
+            return false;
+        }
+        Action::RecordPick(k) => {
+            crate::recorder::pick(shared, k);
+            return false;
+        }
+        Action::RecordGo(t) => {
+            crate::recorder::go(shared, t);
+            return true;
+        }
+        Action::RecordStop => {
+            crate::recorder::stop(shared);
+            return true;
+        }
+        Action::ToggleRecord => {
+            if crate::recorder::is_recording() || shared.fx.lock().unwrap().countdown.is_some() {
+                crate::recorder::stop(shared);
+            } else {
+                crate::recorder::start(shared, fx_bus::RecordTarget::Screen);
+            }
+            return true;
+        }
+        Action::OpenVideosFolder => {
+            let dir = crate::recorder::videos_dir(shared);
+            let _ = std::fs::create_dir_all(&dir);
+            let _ = std::process::Command::new("explorer.exe").arg(&dir).spawn();
+            return false;
+        }
         Action::Screenshot => {
             crate::capture::take(shared);
             return false;
@@ -436,6 +488,8 @@ fn apply(shared: &Shared, action: Action) -> bool {
             Action::ToggleClickSound => c.clicks.sound = !c.clicks.sound,
             Action::ToggleTrail => c.trail.enabled = !c.trail.enabled,
             Action::ToggleToolbar => c.toolbar.visible = !c.toolbar.visible,
+            Action::ToggleRecordAudio(0) => c.record.system_audio = !c.record.system_audio,
+            Action::ToggleRecordAudio(_) => c.record.mic = !c.record.mic,
             Action::ToolbarMoved { x, y } => {
                 c.toolbar.x = Some(*x);
                 c.toolbar.y = Some(*y);

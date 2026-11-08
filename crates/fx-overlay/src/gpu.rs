@@ -131,6 +131,8 @@ pub struct Surface {
     _visual: IDCompositionVisual,
     /// Ce qui est actuellement affiché, pour éviter les rendus inutiles.
     pub shown: Shown,
+    /// Exclue des captures (pendant un enregistrement vidéo).
+    pub excluded: bool,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -214,6 +216,7 @@ impl Surface {
                 _dcomp_target: dcomp_target,
                 _visual: visual,
                 shown: Shown::Unknown,
+                excluded: false,
             })
         }
     }
@@ -228,6 +231,17 @@ impl Surface {
 
     pub fn contains(&self, x: i32, y: i32) -> bool {
         x >= self.rect.left && x < self.rect.right && y >= self.rect.top && y < self.rect.bottom
+    }
+
+    /// Pendant un enregistrement, la surcouche reste visible pour le formateur mais n'apparaît
+    /// pas dans la vidéo (les effets y seront redessinés à l'export).
+    pub fn set_excluded(&mut self, on: bool) {
+        if self.excluded != on {
+            unsafe {
+                let _ = SetWindowDisplayAffinity(self.hwnd, if on { WDA_EXCLUDEFROMCAPTURE } else { WDA_NONE });
+            }
+            self.excluded = on;
+        }
     }
 
     pub fn raise(&self) {

@@ -3,6 +3,7 @@
 
 mod capture;
 mod engine;
+mod recorder;
 mod settings;
 mod tray;
 

@@ -21,6 +21,7 @@ pub struct Config {
     pub show_banner: bool,
     pub toolbar: ToolbarCfg,
     pub capture: CaptureCfg,
+    pub record: RecordCfg,
     pub hotkeys: HotkeysCfg,
 }
 
@@ -80,6 +81,27 @@ pub struct ToolbarCfg {
 impl Default for ToolbarCfg {
     fn default() -> Self {
         ToolbarCfg { visible: true, hide_from_capture: true, x: None, y: None }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
+pub struct RecordCfg {
+    pub system_audio: bool,
+    pub mic: bool,
+    /// 30 ou 60 images par seconde.
+    pub fps: u32,
+    /// Compte à rebours de 3 s avant de démarrer.
+    pub countdown: bool,
+    /// Dossier des enregistrements ; vide = Vidéos\Clicksy.
+    pub folder: String,
+    /// Ouvrir le dossier du projet à la fin.
+    pub open_folder_after: bool,
+}
+
+impl Default for RecordCfg {
+    fn default() -> Self {
+        RecordCfg { system_audio: true, mic: true, fps: 30, countdown: true, folder: String::new(), open_folder_after: true }
     }
 }
 
@@ -164,6 +186,7 @@ pub struct HotkeysCfg {
     pub toggle_toolbar: Option<Hotkey>,
     pub cycle_board: Option<Hotkey>,
     pub screenshot: Option<Hotkey>,
+    pub toggle_record: Option<Hotkey>,
 }
 
 impl Default for DrawCfg {
@@ -207,6 +230,7 @@ impl Default for Config {
             show_banner: true,
             toolbar: ToolbarCfg::default(),
             capture: CaptureCfg { folder: String::new(), copy_to_clipboard: true },
+            record: RecordCfg::default(),
             hotkeys: HotkeysCfg::default(),
         }
     }
@@ -270,6 +294,7 @@ impl Default for HotkeysCfg {
             toggle_toolbar: Hotkey::parse("Ctrl+Alt+Maj+O"),
             cycle_board: Hotkey::parse("Ctrl+Alt+Maj+W"),
             screenshot: Hotkey::parse("Ctrl+Alt+Maj+P"),
+            toggle_record: Hotkey::parse("Ctrl+Alt+Maj+E"),
         }
     }
 }
@@ -306,5 +331,6 @@ impl Config {
         let l = &mut self.laser;
         l.size = l.size.clamp(2.0, 40.0);
         l.duration_ms = l.duration_ms.clamp(50, 3000);
+        self.record.fps = if self.record.fps >= 45 { 60 } else { 30 };
     }
 }

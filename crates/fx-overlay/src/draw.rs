@@ -34,6 +34,14 @@ pub struct Frame<'a> {
     /// Tableau plein écran : 0 aucun, 1 blanc, 2 noir, sur l'écran qui contient `board_pt`.
     pub board: u8,
     pub board_pt: (i32, i32),
+    /// Choix de la source d'enregistrement : 0 aucun, 1 fenêtre, 2 zone.
+    pub select: u8,
+    /// Rectangle mis en évidence pendant le choix (fenêtre survolée ou zone tracée), bureau.
+    pub select_rect: Option<[i32; 4]>,
+    /// Compte à rebours : secondes restantes (arrondies au-dessus) et rectangle visé.
+    pub countdown: Option<(u32, [i32; 4])>,
+    /// Enregistrement en cours : rectangle enregistré (cadre rouge, invisible dans la vidéo).
+    pub rec_rect: Option<[i32; 4]>,
 }
 
 impl Frame<'_> {
@@ -74,7 +82,7 @@ pub fn is_dynamic(s: &Surface, f: &Frame) -> bool {
     let near = |x: f32, y: f32, m: f32| x + m >= l && x - m < r && y + m >= t && y - m < b;
 
     // Modes explicites : actifs même quand les effets sont en pause.
-    if f.draw_mode || (f.banner.is_some() && s.contains(f.cursor.0, f.cursor.1)) {
+    if f.draw_mode || f.select != 0 || f.countdown.is_some() || (f.banner.is_some() && s.contains(f.cursor.0, f.cursor.1)) {
         return true;
     }
     let margin = 60.0 * f.scale;
@@ -170,6 +178,15 @@ pub fn draw(gpu: &Gpu, s: &Surface, f: &Frame) -> Result<()> {
         }
         if f.draw_mode {
             annot::draw_pointer(gpu, f, cx, cy);
+        }
+        if let Some(r) = f.rec_rect {
+            annot::draw_rec_frame(gpu, s, r);
+        }
+        if f.select != 0 {
+            annot::draw_select(gpu, s, f, cx, cy)?;
+        }
+        if let Some((n, r)) = f.countdown {
+            annot::draw_countdown(gpu, s, n, r)?;
         }
         if s.contains(f.cursor.0, f.cursor.1) {
             if let Some((text, alpha)) = f.banner {
