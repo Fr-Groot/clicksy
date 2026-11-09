@@ -55,13 +55,14 @@ enum Btn {
     Laser,
     Spot,
     Keys,
+    Profile,
     Settings,
     Hide,
 }
 
 impl Btn {
     fn label(self) -> &'static str {
-        match self {
+        fx_core::t(match self {
             Btn::Mouse => "Souris",
             Btn::Pen => "Stylo",
             Btn::Rect => "Cadre",
@@ -77,9 +78,10 @@ impl Btn {
             Btn::Laser => "Laser",
             Btn::Spot => "Spot",
             Btn::Keys => "Touches",
+            Btn::Profile => "Profil",
             Btn::Settings => "Réglages",
             Btn::Hide => "Masquer",
-        }
+        })
     }
 
     fn action(self) -> Action {
@@ -100,6 +102,8 @@ impl Btn {
             Btn::Laser => Action::ToggleLaser,
             Btn::Spot => Action::ToggleSpotlight,
             Btn::Keys => Action::ToggleKeys,
+            // Géré à part (menu des profils), voir `profile_click`.
+            Btn::Profile => Action::NextProfile,
             Btn::Settings => Action::OpenSettings,
             Btn::Hide => Action::ToggleToolbar,
         }
@@ -146,7 +150,9 @@ fn layout() -> (Vec<(Hit, D2D_RECT_F)>, Vec<f32>, f32) {
     seps.push(y + SEP_H / 2.0);
     y += SEP_H;
     pair(&mut items, &mut y, Btn::Record, Btn::Capture);
-    pair(&mut items, &mut y, Btn::Keys, Btn::Settings);
+    pair(&mut items, &mut y, Btn::Keys, Btn::Profile);
+    items.push((Hit::Btn(Btn::Settings), rect(PAD, y, W - PAD, y + BTN_H)));
+    y += BTN_H;
     y += PAD;
     (items, seps, y)
 }
@@ -268,7 +274,7 @@ fn signature(tb: &Toolbar, cfg: &Config, v: &View) -> u64 {
     let mut h = std::collections::hash_map::DefaultHasher::new();
     (tb.hover, tb.pressed, tb.scale.to_bits(), v.draw_mode, v.tool as u8, v.color_index, v.width.to_bits()).hash(&mut h);
     (v.laser, v.board, cfg.spotlight.mode as u8, cfg.spotlight.shape as u8).hash(&mut h);
-    (v.recording, v.rec_secs, v.countdown, cfg.keys.enabled, cfg.session.enabled).hash(&mut h);
+    (v.recording, v.rec_secs, v.countdown, cfg.keys.enabled, cfg.session.enabled, fx_core::i18n::english()).hash(&mut h);
     for c in &cfg.draw.colors {
         c.to_hex().hash(&mut h);
     }
@@ -501,7 +507,7 @@ unsafe fn paint(gpu: &Gpu, tb: &Toolbar, cfg: &Config, view: &View) -> Result<()
                 // Le bouton vidéo affiche le chrono pendant l'enregistrement.
                 let text = match (*b, view.rec_secs, view.countdown) {
                     (Btn::Record, Some(s), _) => format!("{}:{:02}", s / 60, s % 60),
-                    (Btn::Record, None, true) => "Annuler".to_string(),
+                    (Btn::Record, None, true) => (if fx_core::i18n::english() { "Cancel" } else { "Annuler" }).to_string(),
                     _ => b.label().to_string(),
                 };
                 let label: Vec<u16> = text.encode_utf16().collect();
@@ -661,6 +667,18 @@ unsafe fn draw_icon(gpu: &Gpu, b: Btn, cx: f32, cy: f32, cfg: &Config, view: &Vi
             line((-2.5, -0.2), (3.0, -4.0), 1.6);
             line((-1.0, -1.2), (3.0, 3.0), 1.6);
         }
+        Btn::Profile => {
+            // Trois curseurs de réglage empilés : un jeu de réglages.
+            let r = D2D1_ROUNDED_RECT {
+                rect: D2D_RECT_F { left: cx - 8.0, top: cy - 8.0, right: cx + 8.0, bottom: cy + 8.0 },
+                radiusX: 3.0,
+                radiusY: 3.0,
+            };
+            dc.DrawRoundedRectangle(&r, br, lw, st);
+            line((-4.0, -3.5), (4.0, -3.5), 1.6);
+            line((-4.0, 0.0), (4.0, 0.0), 1.6);
+            line((-4.0, 3.5), (1.0, 3.5), 1.6);
+        }
         Btn::Settings => {
             for (i, k) in [(-5.0f32, -3.0f32), (0.0, 3.5), (5.0, -1.0)] {
                 line((-8.0, i), (8.0, i), lw);
@@ -804,6 +822,8 @@ unsafe extern "system" fn wnd_proc(hwnd: HWND, msg: u32, wparam: WPARAM, lparam:
             if let Some(a) = action {
                 if a == Action::RecordStop {
                     record_click(hwnd);
+                } else if a == Action::NextProfile {
+                    profile_click(hwnd);
                 } else {
                     fx_bus::action(a);
                 }
@@ -866,14 +886,14 @@ unsafe fn record_click(hwnd: HWND) {
         let flags = if checked { MF_STRING | MF_CHECKED } else { MF_STRING };
         let _ = AppendMenuW(menu, flags, id, PCWSTR(wide.as_ptr()));
     };
-    add(1, "Enregistrer l'écran entier", false);
-    add(2, "Enregistrer une fenêtre…", false);
-    add(3, "Enregistrer une zone…", false);
+    add(1, fx_core::t("Enregistrer l'écran entier"), false);
+    add(2, fx_core::t("Enregistrer une fenêtre…"), false);
+    add(3, fx_core::t("Enregistrer une zone…"), false);
     let _ = AppendMenuW(menu, MF_SEPARATOR, 0, None);
-    add(4, "Son du PC", cfg.record.system_audio);
-    add(5, "Micro", cfg.record.mic);
+    add(4, fx_core::t("Son du PC"), cfg.record.system_audio);
+    add(5, fx_core::t("Micro"), cfg.record.mic);
     let _ = AppendMenuW(menu, MF_SEPARATOR, 0, None);
-    add(6, if cfg.session.enabled { "Ouvrir le dossier de la session" } else { "Ouvrir le dossier des vidéos" }, false);
+    add(6, fx_core::t(if cfg.session.enabled { "Ouvrir le dossier de la session" } else { "Ouvrir le dossier des vidéos" }), false);
 
     let mut pt = POINT::default();
     let _ = GetCursorPos(&mut pt);
@@ -889,6 +909,34 @@ unsafe fn record_click(hwnd: HWND) {
         4 => fx_bus::action(Action::ToggleRecordAudio(0)),
         5 => fx_bus::action(Action::ToggleRecordAudio(1)),
         6 => fx_bus::action(Action::OpenVideosFolder),
+        _ => {}
+    }
+}
+
+/// Bouton « Profil » : liste des profils, le profil actif est coché.
+unsafe fn profile_click(hwnd: HWND) {
+    let Some(shared) = shared() else { return };
+    let cfg = shared.config.load_full();
+    let Ok(menu) = CreatePopupMenu() else { return };
+    for (i, p) in cfg.profiles.iter().enumerate().take(50) {
+        let text = fx_core::i18n::profile_name(&p.name);
+        let wide: Vec<u16> = text.encode_utf16().chain(std::iter::once(0)).collect();
+        let flags = if p.name == cfg.active_profile { MF_STRING | MF_CHECKED } else { MF_STRING };
+        let _ = AppendMenuW(menu, flags, i + 1, PCWSTR(wide.as_ptr()));
+    }
+    let _ = AppendMenuW(menu, MF_SEPARATOR, 0, None);
+    let manage: Vec<u16> = fx_core::t("Gérer les profils…").encode_utf16().chain(std::iter::once(0)).collect();
+    let _ = AppendMenuW(menu, MF_STRING, 1000, PCWSTR(manage.as_ptr()));
+
+    let mut pt = POINT::default();
+    let _ = GetCursorPos(&mut pt);
+    let _ = SetForegroundWindow(hwnd);
+    let cmd = TrackPopupMenu(menu, TPM_RETURNCMD | TPM_RIGHTBUTTON, pt.x, pt.y, None, hwnd, None);
+    let _ = PostMessageW(Some(hwnd), WM_NULL, WPARAM(0), LPARAM(0));
+    let _ = DestroyMenu(menu);
+    match cmd.0 {
+        1000 => fx_bus::action(Action::OpenSettings),
+        n if n >= 1 && n <= 50 => fx_bus::action(Action::ApplyProfile((n - 1) as u8)),
         _ => {}
     }
 }

@@ -3,7 +3,7 @@
 //! Prototype en Win32 natif ; la fenêtre de réglages (Tauri) viendra s'y greffer.
 
 use fx_bus::{Action, SpotlightModeId};
-use fx_core::{Config, Shared, SpotlightMode};
+use fx_core::{t, tf, Config, Shared, SpotlightMode};
 use std::sync::atomic::{AtomicBool, AtomicIsize, AtomicU32, Ordering};
 use std::sync::{Arc, OnceLock};
 use windows::core::{w, PCWSTR};
@@ -41,6 +41,9 @@ const ID_OPEN_SESSION: usize = 43;
 const ID_OPEN_DIR: usize = 40;
 const ID_RELOAD: usize = 41;
 const ID_QUIT: usize = 99;
+const ID_PROFILE: usize = 200;
+const ID_FORMATION: usize = 300;
+const ID_FORMATION_NONE: usize = 399;
 
 static TRAY_HWND: AtomicIsize = AtomicIsize::new(0);
 static TASKBAR_CREATED: AtomicU32 = AtomicU32::new(0);
@@ -87,7 +90,7 @@ pub fn shutdown() {
 
 /// Actions déclenchables en ligne de commande (`clicksy.exe --action dessin`),
 /// par exemple depuis un Stream Deck ou un script. 0 = ouvrir les réglages.
-pub const CLI_ACTIONS: [(&str, fn() -> Action); 17] = [
+pub const CLI_ACTIONS: [(&str, fn() -> Action); 18] = [
     ("tout", || Action::ToggleAll),
     ("spotlight", || Action::ToggleSpotlight),
     ("anneau", || Action::ToggleRing),
@@ -105,6 +108,7 @@ pub const CLI_ACTIONS: [(&str, fn() -> Action); 17] = [
     ("video", || Action::ToggleRecord),
     ("touches", || Action::ToggleKeys),
     ("session", || Action::NewSession),
+    ("profil", || Action::NextProfile),
 ];
 
 /// Code (1-based) d'une action nommée, pour [`signal_running_instance`].
@@ -186,9 +190,9 @@ fn config() -> Arc<Config> {
 
 fn tooltip(cfg: &Config) -> String {
     if cfg.enabled {
-        format!("Clicksy : actif (spotlight : {})", cfg.spotlight.mode.label_fr().to_lowercase())
+        tf("Clicksy : actif (spotlight : {})", &[&t(cfg.spotlight.mode.label_fr()).to_lowercase()])
     } else {
-        "Clicksy : en pause".to_string()
+        t("Clicksy : en pause").to_string()
     }
 }
 
@@ -284,9 +288,10 @@ unsafe extern "system" fn wnd_proc(hwnd: HWND, msg: u32, wparam: WPARAM, lparam:
     }
 }
 
-fn hk_label(label: &str, hk: Option<fx_core::Hotkey>) -> String {
+fn hk_label(label: &'static str, hk: Option<fx_core::Hotkey>) -> String {
+    let label = t(label);
     match hk {
-        Some(h) => format!("{label}\t{h}"),
+        Some(h) => format!("{label}\t{}", fx_core::i18n::hotkey_label(&h.to_string())),
         None => label.to_string(),
     }
 }
@@ -308,17 +313,17 @@ unsafe fn show_menu(hwnd: HWND) {
     let Ok(menu) = CreatePopupMenu() else { return };
     let Ok(spot) = CreatePopupMenu() else { return };
 
-    append(menu, ID_SETTINGS, "Réglages…", false, true);
+    append(menu, ID_SETTINGS, t("Réglages…"), false, true);
     let _ = SetMenuDefaultItem(menu, ID_SETTINGS as u32, 0);
     let _ = AppendMenuW(menu, MF_SEPARATOR, 0, None);
     append(menu, ID_ENABLED, &hk_label("Effets activés", cfg.hotkeys.toggle_all), cfg.enabled, true);
     let _ = AppendMenuW(menu, MF_SEPARATOR, 0, None);
 
     let m = cfg.spotlight.mode;
-    append(spot, ID_SPOT_OFF, "Désactivé", m == SpotlightMode::Off, true);
-    append(spot, ID_SPOT_CIRCLE, "Cercle", m == SpotlightMode::Circle, true);
-    append(spot, ID_SPOT_HBAND, "Bande horizontale", m == SpotlightMode::HBand, true);
-    append(spot, ID_SPOT_VBAND, "Bande verticale", m == SpotlightMode::VBand, true);
+    append(spot, ID_SPOT_OFF, t("Désactivé"), m == SpotlightMode::Off, true);
+    append(spot, ID_SPOT_CIRCLE, t("Cercle"), m == SpotlightMode::Circle, true);
+    append(spot, ID_SPOT_HBAND, t("Bande horizontale"), m == SpotlightMode::HBand, true);
+    append(spot, ID_SPOT_VBAND, t("Bande verticale"), m == SpotlightMode::VBand, true);
     let spot_label: Vec<u16> = hk_label("Spotlight", cfg.hotkeys.cycle_spotlight)
         .encode_utf16()
         .chain(std::iter::once(0))
@@ -326,9 +331,9 @@ unsafe fn show_menu(hwnd: HWND) {
     let _ = AppendMenuW(menu, MF_POPUP, spot.0 as usize, PCWSTR(spot_label.as_ptr()));
 
     append(menu, ID_RING, &hk_label("Anneau autour du curseur", cfg.hotkeys.toggle_ring), cfg.ring.enabled, true);
-    append(menu, ID_PULSE, "Pulsation de l'anneau", cfg.ring.pulse, cfg.ring.enabled);
+    append(menu, ID_PULSE, t("Pulsation de l'anneau"), cfg.ring.pulse, cfg.ring.enabled);
     append(menu, ID_CLICKS, &hk_label("Effets de clic", cfg.hotkeys.toggle_clicks), cfg.clicks.enabled, true);
-    append(menu, ID_SOUND, "Son de clic", cfg.clicks.sound, cfg.clicks.enabled);
+    append(menu, ID_SOUND, t("Son de clic"), cfg.clicks.sound, cfg.clicks.enabled);
     append(menu, ID_TRAIL, &hk_label("Traînée du curseur", cfg.hotkeys.toggle_trail), cfg.trail.enabled, true);
     append(menu, ID_KEYS, &hk_label("Afficher les touches", cfg.hotkeys.toggle_keys), cfg.keys.enabled, true);
     let _ = AppendMenuW(menu, MF_SEPARATOR, 0, None);
@@ -341,15 +346,41 @@ unsafe fn show_menu(hwnd: HWND) {
     append(menu, ID_RECORD, &hk_label(rec_label, cfg.hotkeys.toggle_record), modes.recording.load(Ordering::Acquire), true);
     append(menu, ID_TOOLBAR, &hk_label("Barre d'outils", cfg.hotkeys.toggle_toolbar), cfg.toolbar.visible, true);
     let _ = AppendMenuW(menu, MF_SEPARATOR, 0, None);
+    // Profils et formation : sous-menus.
+    if let Ok(prof) = CreatePopupMenu() {
+        for (i, p) in cfg.profiles.iter().enumerate().take(50) {
+            append(prof, ID_PROFILE + i, &crate::profile_name(&p.name), p.name == cfg.active_profile, true);
+        }
+        let label = hk_label("Profils", cfg.hotkeys.next_profile);
+        let label = match cfg.profiles.iter().find(|p| p.name == cfg.active_profile) {
+            Some(p) => label.replacen(t("Profils"), &format!("{} : {}", t("Profil"), crate::profile_name(&p.name)), 1),
+            None => label,
+        };
+        let wide: Vec<u16> = label.encode_utf16().chain(std::iter::once(0)).collect();
+        let _ = AppendMenuW(menu, MF_POPUP, prof.0 as usize, PCWSTR(wide.as_ptr()));
+    }
     if cfg.session.enabled {
-        append(menu, ID_NEW_SESSION, "Nouvelle session", false, true);
-        append(menu, ID_OPEN_SESSION, "Ouvrir le dossier de la session", false, true);
+        if let Ok(form) = CreatePopupMenu() {
+            append(form, ID_FORMATION_NONE, t("Aucune formation"), cfg.session.formation.is_empty(), true);
+            for (i, f) in cfg.session.formations.iter().enumerate() {
+                append(form, ID_FORMATION + i, f, *f == cfg.session.formation, true);
+            }
+            let label = if cfg.session.formation.is_empty() {
+                t("Formation").to_string()
+            } else {
+                format!("{} : {}", t("Formation"), cfg.session.formation)
+            };
+            let wide: Vec<u16> = label.encode_utf16().chain(std::iter::once(0)).collect();
+            let _ = AppendMenuW(menu, MF_POPUP, form.0 as usize, PCWSTR(wide.as_ptr()));
+        }
+        append(menu, ID_NEW_SESSION, t("Nouvelle session"), false, true);
+        append(menu, ID_OPEN_SESSION, t("Ouvrir le dossier de la session"), false, true);
         let _ = AppendMenuW(menu, MF_SEPARATOR, 0, None);
     }
-    append(menu, ID_OPEN_DIR, "Ouvrir le dossier de configuration", false, true);
-    append(menu, ID_RELOAD, "Recharger la configuration", false, true);
+    append(menu, ID_OPEN_DIR, t("Ouvrir le dossier de configuration"), false, true);
+    append(menu, ID_RELOAD, t("Recharger la configuration"), false, true);
     let _ = AppendMenuW(menu, MF_SEPARATOR, 0, None);
-    append(menu, ID_QUIT, "Quitter Clicksy", false, true);
+    append(menu, ID_QUIT, t("Quitter Clicksy"), false, true);
 
     let mut pt = POINT::default();
     let _ = GetCursorPos(&mut pt);
@@ -390,6 +421,9 @@ unsafe fn show_menu(hwnd: HWND) {
         ID_OPEN_SESSION => fx_bus::action(Action::OpenSessionFolder),
         ID_RELOAD => fx_bus::action(Action::ReloadConfig),
         ID_OPEN_DIR => open_data_dir(),
+        id if (ID_PROFILE..ID_PROFILE + 50).contains(&id) => fx_bus::action(Action::ApplyProfile((id - ID_PROFILE) as u8)),
+        ID_FORMATION_NONE => fx_bus::action(Action::SetFormation(255)),
+        id if (ID_FORMATION..ID_FORMATION + 10).contains(&id) => fx_bus::action(Action::SetFormation((id - ID_FORMATION) as u8)),
         ID_QUIT => {
             let _ = DestroyWindow(hwnd);
         }

@@ -17,6 +17,7 @@
     </div>
     <nav>
       <a href="#general" class="active">Général</a>
+      <a href="#profiles">Profils</a>
       <a href="#spotlight">Spotlight</a>
       <a href="#ring">Anneau</a>
       <a href="#clicks">Clics</a>
@@ -49,6 +50,14 @@
           <div class="row-text"><strong>Bulle de confirmation</strong><span>Petit message en haut de l'écran quand tu utilises un raccourci (« Spotlight : cercle »…).</span></div>
           <label class="switch"><input type="checkbox" data-path="show_banner"><span class="track"></span></label>
         </div>
+        <div class="row stack">
+          <div class="row-text"><strong>Langue</strong><span>Menus, barre d'outils, bulles et réglages. « Auto » suit la langue de Windows.</span></div>
+          <div class="segmented" data-path="language" id="language">
+            <button data-value="Auto">Auto</button>
+            <button data-value="Fr">Français</button>
+            <button data-value="En">English</button>
+          </div>
+        </div>
       </div>
 
       <h2>Barre d'outils</h2>
@@ -68,6 +77,14 @@
         <div class="row">
           <div class="row-text"><strong>Ranger chaque session dans un dossier</strong><span>Captures, images du tableau et vidéos d'une même séance vont dans un seul dossier, par exemple <span class="mono">Documents › Clicksy › 2026-11-08 14h30</span>. Une nouvelle session commence au lancement de Clicksy et chaque jour. Désactivé : captures dans Images › Clicksy et vidéos dans Vidéos › Clicksy.</span></div>
           <label class="switch"><input type="checkbox" data-path="session.enabled"><span class="track"></span></label>
+        </div>
+        <div class="row">
+          <div class="row-text"><strong>Formation en cours</strong><span>Les sessions sont rangées dans un sous-dossier à son nom, par exemple <span class="mono">Documents › Clicksy › Excel niveau 1 › 2026-11-09 14h30</span>. Laisse vide pour ne pas classer. Aussi dans le menu de l'icône.</span></div>
+          <div class="btns">
+            <input type="text" class="text" id="formation" list="formation-list" maxlength="60" placeholder="Ex. : Excel niveau 1">
+            <datalist id="formation-list"></datalist>
+            <button class="btn" id="formation-set">Valider</button>
+          </div>
         </div>
         <div class="row">
           <div class="row-text"><strong>Session en cours</strong><span id="session-dir" class="mono">…</span></div>
@@ -99,6 +116,22 @@
       </div>
 
       <p class="note">Clicksy ne fait aucun appel réseau et n'envoie aucune donnée. Les touches tapées ne sont jamais enregistrées : l'affichage des touches les montre quelques secondes, puis les oublie.</p>
+    </section>
+
+    <section id="profiles" class="page">
+      <h1>Profils</h1>
+      <p class="lead">Un profil regroupe tes réglages (effets, dessin, touches, enregistrement) pour un usage : tuto, classe virtuelle, stream… Applique-le en un clic avec le bouton « Profil » de la barre d'outils, le menu de l'icône, ou <kbd data-hk="next_profile"></kbd> pour passer au suivant.</p>
+      <div class="card" id="profile-list"></div>
+      <div class="card">
+        <div class="row">
+          <div class="row-text"><strong>Nouveau profil</strong><span>Crée un profil à partir des réglages actuels.</span></div>
+          <div class="btns">
+            <input type="text" class="text" id="profile-name" maxlength="40" placeholder="Nom du profil">
+            <button class="btn" id="profile-add">Créer</button>
+          </div>
+        </div>
+      </div>
+      <p class="note">Pour modifier un profil : applique-le, change les réglages dans les autres pages, puis clique sur « Mettre à jour ». Les raccourcis, la barre d'outils et les dossiers ne font pas partie des profils. Si tu supprimes tous les profils, ceux d'origine reviennent.</p>
     </section>
 
     <section id="spotlight" class="page">
@@ -409,6 +442,10 @@
           <div class="row-text"><strong>Afficher les touches</strong></div>
           <input class="hotkey" data-path="hotkeys.toggle_keys" readonly>
         </div>
+        <div class="row">
+          <div class="row-text"><strong>Profil suivant</strong></div>
+          <input class="hotkey" data-path="hotkeys.next_profile" readonly>
+        </div>
       </div>
       <p class="warn" id="hk-warn" hidden></p>
       <p class="note">Conseil : garde <kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>Maj</kbd>. Sur un clavier AZERTY, <kbd>Ctrl</kbd> + <kbd>Alt</kbd> seul équivaut à <kbd>AltGr</kbd> et peut bloquer des caractères comme @ ou #.</p>
@@ -457,6 +494,8 @@
   </main>
 
   <div class="toast" id="toast" role="status" hidden></div>
+  <script src="i18n.js"></script>
+  <script src="i18n-en.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

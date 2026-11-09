@@ -47,13 +47,15 @@ pub fn load_config(dir: &Path) -> (Config, Option<String>) {
             }
             Err(e) => {
                 let _ = std::fs::rename(&path, path.with_extension("json.invalide"));
-                let c = Config::default();
+                let mut c = Config::default();
+                c.sanitize();
                 let _ = save_config(dir, &c);
                 (c, Some(format!("config.json invalide ({e}) : valeurs par défaut restaurées.")))
             }
         },
         Err(_) => {
-            let c = Config::default();
+            let mut c = Config::default();
+            c.sanitize();
             let _ = save_config(dir, &c);
             (c, None)
         }

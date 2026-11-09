@@ -24,10 +24,10 @@ pub fn take(shared: &Shared) {
     let cfg = shared.config.load_full();
     match save(shared, pt, "Capture", cfg.capture.copy_to_clipboard) {
         Ok(path) => {
-            let extra = if cfg.capture.copy_to_clipboard { " et copiée" } else { "" };
-            shared.banner(format!("Capture enregistrée{extra} : {}", file_name(&path)));
+            let msg = if cfg.capture.copy_to_clipboard { "Capture enregistrée et copiée : {}" } else { "Capture enregistrée : {}" };
+            shared.banner(fx_core::tf(msg, &[&file_name(&path)]));
         }
-        Err(e) => shared.banner(format!("Capture impossible : {e}")),
+        Err(e) => shared.banner(fx_core::tf("Capture impossible : {}", &[&e])),
     }
 }
 

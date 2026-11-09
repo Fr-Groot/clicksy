@@ -25,6 +25,119 @@ pub struct Config {
     pub keys: KeysCfg,
     pub session: SessionCfg,
     pub hotkeys: HotkeysCfg,
+    /// Langue des menus, de la barre et des réglages.
+    pub language: crate::i18n::Language,
+    /// Profils d'utilisation (Tuto, Classe virtuelle…) : des jeux de réglages appliqués en un clic.
+    pub profiles: Vec<Profile>,
+    /// Nom du dernier profil appliqué (vide : aucun).
+    pub active_profile: String,
+}
+
+/// Un profil : nom + réglages des effets, du dessin, des touches et de l'enregistrement.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Profile {
+    pub name: String,
+    pub settings: ProfileSettings,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
+pub struct ProfileSettings {
+    pub enabled: bool,
+    pub show_banner: bool,
+    pub spotlight: SpotlightCfg,
+    pub ring: RingCfg,
+    pub clicks: ClicksCfg,
+    pub draw: DrawCfg,
+    pub trail: TrailCfg,
+    pub laser: LaserCfg,
+    pub keys: KeysCfg,
+    pub record: RecordCfg,
+}
+
+impl Default for ProfileSettings {
+    fn default() -> Self {
+        Config::default().snapshot()
+    }
+}
+
+/// Noms des profils proposés d'origine (traduits à l'affichage).
+pub const BUILTIN_PROFILES: [&str; 4] = ["Tuto", "Classe virtuelle", "Stream", "Démo logiciel"];
+
+impl Config {
+    /// Réglages actuels, pour créer ou mettre à jour un profil.
+    pub fn snapshot(&self) -> ProfileSettings {
+        ProfileSettings {
+            enabled: self.enabled,
+            show_banner: self.show_banner,
+            spotlight: self.spotlight.clone(),
+            ring: self.ring.clone(),
+            clicks: self.clicks.clone(),
+            draw: self.draw.clone(),
+            trail: self.trail.clone(),
+            laser: self.laser.clone(),
+            keys: self.keys.clone(),
+            record: self.record.clone(),
+        }
+    }
+
+    /// Applique un profil (le dossier des vidéos choisi par l'utilisateur est conservé).
+    pub fn apply_profile(&mut self, p: &Profile) {
+        let s = &p.settings;
+        let folder = std::mem::take(&mut self.record.folder);
+        self.enabled = s.enabled;
+        self.show_banner = s.show_banner;
+        self.spotlight = s.spotlight.clone();
+        self.ring = s.ring.clone();
+        self.clicks = s.clicks.clone();
+        self.draw = s.draw.clone();
+        self.trail = s.trail.clone();
+        self.laser = s.laser.clone();
+        self.keys = s.keys.clone();
+        self.record = s.record.clone();
+        self.record.folder = folder;
+        self.active_profile = p.name.clone();
+        self.sanitize();
+    }
+
+    /// Profils proposés à la première utilisation.
+    pub fn builtin_profiles() -> Vec<Profile> {
+        let base = Config::default().snapshot();
+        let mk = |name: &str, f: &dyn Fn(&mut ProfileSettings)| {
+            let mut s = base.clone();
+            f(&mut s);
+            Profile { name: name.into(), settings: s }
+        };
+        vec![
+            // Tuto : on voit les raccourcis et on entend les clics (vidéo sans image de la souris).
+            mk("Tuto", &|s| {
+                s.keys.enabled = true;
+                s.clicks.sound = true;
+                s.record.burn_effects = true;
+            }),
+            // Classe virtuelle : repérage du curseur pour les participants, rien de bruyant.
+            mk("Classe virtuelle", &|s| {
+                s.ring.pulse = true;
+                s.clicks.sound = false;
+                s.keys.enabled = false;
+            }),
+            // Stream : mouvements fluides et visibles, pas de bulles ni de touches.
+            mk("Stream", &|s| {
+                s.ring.enabled = false;
+                s.trail.enabled = true;
+                s.show_banner = false;
+                s.keys.enabled = false;
+                s.record.fps = 60;
+            }),
+            // Démo logiciel : spotlight sur la zone utile et raccourcis affichés.
+            mk("Démo logiciel", &|s| {
+                s.spotlight.mode = SpotlightMode::Circle;
+                s.spotlight.shape = SpotlightMode::Circle;
+                s.spotlight.dim = 0.45;
+                s.keys.enabled = true;
+            }),
+        ]
+    }
 }
 
 /// Où s'affichent les touches pressées (en bas de l'écran de la souris).
@@ -64,12 +177,31 @@ pub struct SessionCfg {
     pub enabled: bool,
     /// Dossier des sessions ; vide = Documents\Clicksy.
     pub folder: String,
+    /// Formation en cours (« Excel niveau 1 ») : ses sessions sont rangées dans un sous-dossier à son nom.
+    pub formation: String,
+    /// Formations récentes, la plus récente en premier.
+    pub formations: Vec<String>,
 }
 
 impl Default for SessionCfg {
     fn default() -> Self {
-        SessionCfg { enabled: true, folder: String::new() }
+        SessionCfg { enabled: true, folder: String::new(), formation: String::new(), formations: Vec::new() }
     }
+}
+
+/// Nom utilisable comme nom de dossier Windows (caractères interdits retirés, 60 caractères au plus).
+pub fn folder_name(s: &str) -> String {
+    let cleaned: String = s
+        .chars()
+        .map(|c| if "<>:\"/\\|?*".contains(c) || c.is_control() { ' ' } else { c })
+        .collect();
+    let words: Vec<&str> = cleaned.split_whitespace().collect();
+    let mut out: String = words.join(" ").chars().take(60).collect();
+    // Windows refuse un nom qui finit par un point ou une espace.
+    while out.ends_with('.') || out.ends_with(' ') {
+        out.pop();
+    }
+    out
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -240,11 +372,12 @@ pub struct HotkeysCfg {
     pub screenshot: Option<Hotkey>,
     pub toggle_record: Option<Hotkey>,
     pub toggle_keys: Option<Hotkey>,
+    pub next_profile: Option<Hotkey>,
 }
 
 impl HotkeysCfg {
     /// Tous les raccourcis de Clicksy et l'action de chacun.
-    pub fn table(&self) -> [(Option<Hotkey>, fx_bus::Action); 12] {
+    pub fn table(&self) -> [(Option<Hotkey>, fx_bus::Action); 13] {
         use fx_bus::Action;
         [
             (self.toggle_all, Action::ToggleAll),
@@ -259,6 +392,7 @@ impl HotkeysCfg {
             (self.screenshot, Action::Screenshot),
             (self.toggle_record, Action::ToggleRecord),
             (self.toggle_keys, Action::ToggleKeys),
+            (self.next_profile, Action::NextProfile),
         ]
     }
 }
@@ -309,6 +443,10 @@ impl Default for Config {
             keys: KeysCfg::default(),
             session: SessionCfg::default(),
             hotkeys: HotkeysCfg::default(),
+            language: crate::i18n::Language::Auto,
+            // Remplis par `sanitize` avec les profils proposés.
+            profiles: Vec::new(),
+            active_profile: String::new(),
         }
     }
 }
@@ -373,6 +511,7 @@ impl Default for HotkeysCfg {
             screenshot: Hotkey::parse("Ctrl+Alt+Maj+P"),
             toggle_record: Hotkey::parse("Ctrl+Alt+Maj+E"),
             toggle_keys: Hotkey::parse("Ctrl+Alt+Maj+K"),
+            next_profile: Hotkey::parse("Ctrl+Alt+Maj+Y"),
         }
     }
 }
@@ -409,6 +548,28 @@ impl Config {
         let l = &mut self.laser;
         l.size = l.size.clamp(2.0, 40.0);
         l.duration_ms = l.duration_ms.clamp(50, 3000);
+        // Profils : noms non vides et uniques ; sans aucun profil, on repropose ceux d'origine.
+        let mut seen = std::collections::HashSet::new();
+        self.profiles.retain_mut(|p| {
+            p.name = p.name.trim().chars().take(40).collect();
+            !p.name.is_empty() && seen.insert(p.name.to_lowercase())
+        });
+        if self.profiles.is_empty() {
+            self.profiles = Config::builtin_profiles();
+        }
+        for p in &mut self.profiles {
+            p.settings.spotlight.radius = p.settings.spotlight.radius.clamp(20.0, 2000.0);
+            p.settings.keys.duration_ms = p.settings.keys.duration_ms.clamp(500, 6000);
+            p.settings.keys.size = p.settings.keys.size.clamp(12.0, 48.0);
+        }
+        if !self.profiles.iter().any(|p| p.name == self.active_profile) {
+            self.active_profile.clear();
+        }
+        // Formation : nom de dossier valide, et liste des récentes sans doublon (10 au plus).
+        let s = &mut self.session;
+        s.formation = folder_name(&s.formation);
+        let mut seen = std::collections::HashSet::new();
+        s.formations = s.formations.iter().map(|f| folder_name(f)).filter(|f| !f.is_empty() && seen.insert(f.to_lowercase())).take(10).collect();
         self.keys.duration_ms = self.keys.duration_ms.clamp(500, 6000);
         self.keys.size = self.keys.size.clamp(12.0, 48.0);
         self.record.fps = if self.record.fps >= 45 { 60 } else { 30 };

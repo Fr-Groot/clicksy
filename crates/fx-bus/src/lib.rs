@@ -71,6 +71,12 @@ pub enum Action {
     NewSession,
     /// Ouvre le dossier de la session en cours (ou le dossier des sessions).
     OpenSessionFolder,
+    /// Applique le profil n° (ordre de la liste des réglages).
+    ApplyProfile(u8),
+    /// Profil suivant de la liste.
+    NextProfile,
+    /// Formation en cours : n° dans la liste des récentes, 255 = aucune.
+    SetFormation(u8),
     ReloadConfig,
     Quit,
 }

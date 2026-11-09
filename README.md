@@ -36,10 +36,13 @@ It draws effects on top of the screen to guide the audience's attention:
   from screen sharing and captures;
 - **Screen recording** of a screen, window or region, with system audio and microphone, cursor and
   effects included (or recorded separately for a future editor);
-- **Screenshots** to PNG and clipboard; global hotkeys; command-line actions for Stream Deck.
+- **Screenshots** to PNG and clipboard; global hotkeys; command-line actions for Stream Deck;
+- **Key display** for software tutorials (“Ctrl + C”, “Shift + Left click”), hidden in password fields;
+- **Profiles** (Tutorial, Virtual class, Stream, Software demo, or your own) applied in one click, and
+  **sessions** that keep screenshots, board images and videos together, sorted by course.
 
 It makes no network connections, has no telemetry and never stores keystrokes. The interface is in
-French. Download the MSI installer or portable ZIP from the
+**French and English** (it follows the Windows language, or choose in Settings › General). Download the MSI installer or portable ZIP from the
 [latest release](https://github.com/Fr-Groot/clicksy/releases/latest). Bug reports and ideas are welcome
 in [Issues](https://github.com/Fr-Groot/clicksy/issues), in English or French.
 
@@ -96,6 +99,7 @@ L'icône (un anneau jaune) apparaît dans la zone de notification, à côté de 
 | Ctrl + Alt + Maj + O | Afficher / masquer la barre d'outils |
 | Ctrl + Alt + Maj + E | Enregistrer l'écran de la souris / arrêter l'enregistrement |
 | Ctrl + Alt + Maj + K | Afficher les touches pressées |
+| Ctrl + Alt + Maj + Y | Profil suivant |
 
 Tous se modifient dans **Réglages › Raccourcis**. Clicksy signale les doublons, les raccourcis déjà pris
 par Teams, Office ou Windows, et les combinaisons qui correspondent à AltGr sur un clavier AZERTY.
@@ -105,7 +109,7 @@ Une bulle de confirmation (« Spotlight : cercle »…) s'affiche brièvement en
 
 Une barre flottante (bord droit par défaut) donne accès à tout sans raccourci : Souris, Stylo, Cadre,
 Rond, Flèche, épaisseur du trait, 3 couleurs, Annuler, Effacer, tableau Blanc, tableau Noir, Spot, Laser,
-Capture, Touches, Réglages, et un petit bouton « réduire » dans la poignée. Les réglages (forme du spotlight, couleurs…)
+Capture, Touches, Profil, Réglages, et un petit bouton « réduire » dans la poignée. Les réglages (forme du spotlight, couleurs…)
 se choisissent dans la fenêtre Réglages ; la barre sert à les appliquer.
 
 - **Ne prend jamais le focus** : cliquer dessus ne fait pas sortir PowerPoint du diaporama.
@@ -153,6 +157,31 @@ enregistrement). Une session commence au lancement de Clicksy et chaque jour ; *
 (ou le bouton des Réglages) en ouvre une autre. Le dossier n'est créé qu'au premier élément enregistré.
 Désactivable dans Réglages › Général : on retrouve alors `Images\Clicksy` et `Vidéos\Clicksy`.
 
+**Formation en cours** (Réglages › Général, ou **Menu › Formation**) : les sessions sont alors rangées
+dans un sous-dossier à son nom, `Documents\Clicksy\Excel niveau 1\2026-11-09 14h30\`. Les dix dernières
+formations restent proposées dans le menu. Changer de formation ouvre une nouvelle session.
+
+### Profils
+
+Un profil regroupe les réglages des effets, du dessin, des touches et de l'enregistrement pour un usage.
+Quatre sont proposés d'origine :
+
+| Profil | Réglages |
+|---|---|
+| Tuto | Touches affichées, son de clic, souris incrustée dans la vidéo |
+| Classe virtuelle | Anneau qui pulse, clics, sans son ni touches |
+| Stream | Traînée, pas d'anneau ni de bulles, vidéo à 60 i/s |
+| Démo logiciel | Spotlight cercle allumé, touches affichées |
+
+On applique un profil avec le bouton **Profil** de la barre d'outils, **Menu › Profil**, ou Ctrl + Alt + Maj + Y
+(profil suivant). Dans **Réglages › Profils** : créer un profil à partir des réglages actuels, le mettre à jour,
+le renommer ou le supprimer. Les raccourcis, la barre d'outils et les dossiers ne font pas partie des profils.
+
+### Langue
+
+Français ou anglais pour les menus, la barre d'outils, les bulles, les touches affichées et les réglages.
+Par défaut, Clicksy suit la langue de Windows ; **Réglages › Général › Langue** permet de choisir.
+
 ### Enregistrement vidéo
 
 Bouton **Vidéo** de la barre d'outils : écran entier, une fenêtre (clic dessus) ou une zone (tracée à la souris),
@@ -184,7 +213,7 @@ les effets Clicksy ne sont pas visibles non plus dans un partage Teams simultan�
 
 Avec Clicksy déjà lancé, `clicksy.exe --action <nom>` déclenche une action :
 `tout`, `spotlight`, `anneau`, `clics`, `trainee`, `laser`, `dessin`, `pulsation`, `son`,
-`tableau`, `blanc`, `noir`, `capture`, `barre`, `video`, `touches`, `session` (nouvelle session).
+`tableau`, `blanc`, `noir`, `capture`, `barre`, `video`, `touches`, `session` (nouvelle session), `profil` (profil suivant).
 Pratique pour un bouton Stream Deck (action « Ouvrir » avec ces arguments).
 
 ## Test manuel
@@ -233,6 +262,14 @@ Pratique pour un bouton Stream Deck (action « Ouvrir » avec ces arguments).
 | 40 | Bouton Blanc, dessiner, Effacer, dessiner, re-cliquer Blanc | Deux images `Tableau …png` dans le dossier de la session, sans pointeur ni bulle ; « Tableau fermé · image enregistrée » |
 | 41 | Capture, puis vidéo de quelques secondes | Capture et dossier `Vidéo …` dans le même dossier `Documents\Clicksy\<date heure>` |
 | 42 | Menu › Nouvelle session, puis Capture | Nouveau dossier de session |
+| 43 | Réglages › Général › Langue › English | Réglages, menu de l'icône, barre d'outils et bulles en anglais ; touches affichées « Shift », « Enter » |
+| 44 | Langue « Auto » sur un Windows en anglais | Clicksy démarre en anglais |
+| 45 | Bouton Profil de la barre › Stream | Bulle « Profil : Stream » ; traînée allumée, anneau éteint ; le profil est coché dans le menu |
+| 46 | Ctrl + Alt + Maj + Y plusieurs fois | Les profils défilent dans l'ordre |
+| 47 | Réglages › Profils : changer une couleur, « Mettre à jour », appliquer un autre profil puis revenir | La couleur modifiée revient avec le profil |
+| 48 | Réglages › Profils : créer « Mon profil », le renommer, le supprimer | La barre et le menu suivent ; supprimer tous les profils fait revenir ceux d'origine |
+| 49 | Réglages › Général › Formation « Excel niveau 1 » › Valider, puis Capture | Fichier dans `Documents\Clicksy\Excel niveau 1\<date heure>\` ; la formation apparaît dans Menu › Formation |
+| 50 | Menu › Formation › Aucune formation, puis Capture | Nouvelle session directement dans `Documents\Clicksy\` |
 
 ## Limites Windows connues
 

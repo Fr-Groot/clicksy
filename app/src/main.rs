@@ -50,6 +50,9 @@ fn main() {
 
     fx_bus::init();
     let dir = paths::data_dir();
+    // Langue « Auto » : celle de Windows.
+    let ui_lang = unsafe { windows::Win32::Globalization::GetUserDefaultUILanguage() };
+    fx_core::i18n::set_system_french(ui_lang & 0x3FF == 0x0C);
     let (cfg, warning) = paths::load_config(&dir);
     if let Some(w) = &warning {
         eprintln!("{w}");
@@ -75,6 +78,8 @@ fn main() {
             settings::set_config,
             settings::run_action,
             settings::session_info,
+            settings::set_formation,
+            settings::ui_language,
             settings::open_data_dir,
             settings::data_dir,
         ])
@@ -100,4 +105,9 @@ fn main() {
         }
         _ => {}
     });
+}
+
+/// Nom d'un profil à l'affichage : les profils proposés d'origine sont traduits.
+pub fn profile_name(name: &str) -> String {
+    fx_core::i18n::profile_name(name)
 }

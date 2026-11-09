@@ -5,7 +5,7 @@
 //! « toutes les touches », la saisie est masquée dès que le champ actif est un mot de passe.
 
 use fx_bus::{EventKind, MouseButton};
-use fx_core::{Config, Hotkey, KeyShow, Shared};
+use fx_core::{t, Config, Hotkey, KeyShow, Shared};
 use std::collections::HashSet;
 use std::sync::atomic::Ordering;
 use std::time::{Duration, Instant};
@@ -16,7 +16,7 @@ use windows::Win32::UI::Input::KeyboardAndMouse::{GetKeyNameTextW, MapVirtualKey
 /// Au-delà, les plus anciennes touches d'une suite tapée disparaissent.
 const MAX_SEQ: usize = 14;
 /// Texte affiché à la place de la saisie dans un champ mot de passe.
-const MASKED: &str = "Saisie masquée";
+const MASKED: &str = "Saisie masquée"; // traduit à l'affichage
 
 #[derive(Default)]
 pub struct Keys {
@@ -63,7 +63,7 @@ impl Keys {
                     MouseButton::X2 => "Bouton suivant",
                 };
                 let mut parts = self.mods();
-                parts.push(name.into());
+                parts.push(t(name).into());
                 show_combo(shared, parts, cfg.keys.duration_ms);
             }
             EventKind::Wheel { delta, horizontal: false, x, y } => {
@@ -76,7 +76,7 @@ impl Keys {
                     return;
                 }
                 let mut parts = self.mods();
-                parts.push(if delta > 0 { "Molette ↑" } else { "Molette ↓" }.into());
+                parts.push(t(if delta > 0 { "Molette ↑" } else { "Molette ↓" }).into());
                 show_combo(shared, parts, cfg.keys.duration_ms);
             }
             _ => {}
@@ -104,7 +104,7 @@ impl Keys {
             v.push("AltGr".into());
         }
         if self.shift {
-            v.push("Maj".into());
+            v.push(t("Maj").into());
         }
         if self.win {
             v.push("Win".into());
@@ -252,7 +252,7 @@ fn show_typed(shared: &Shared, name: String, dur_ms: u32) {
 
 /// Champ mot de passe : une seule étiquette, sans compteur (qui trahirait la longueur).
 fn show_masked(shared: &Shared) {
-    shared.fx.lock().unwrap().keys = Some(KeyShow { parts: vec![MASKED.into()], combo: true, count: 1, start: Instant::now() });
+    shared.fx.lock().unwrap().keys = Some(KeyShow { parts: vec![t(MASKED).into()], combo: true, count: 1, start: Instant::now() });
     shared.wake();
 }
 
@@ -303,7 +303,7 @@ fn key_name(vk: u32) -> String {
         _ => "",
     };
     if !fixed.is_empty() {
-        return fixed.into();
+        return t(fixed).into();
     }
     match vk {
         0x30..=0x39 | 0x41..=0x5A => char::from_u32(vk).map(String::from).unwrap_or_default(),
@@ -322,7 +322,7 @@ fn key_name(vk: u32) -> String {
             if n > 0 {
                 String::from_utf16_lossy(&buf[..n as usize])
             } else {
-                format!("Touche {vk}")
+                fx_core::tf("Touche {}", &[&vk.to_string()])
             }
         },
     }

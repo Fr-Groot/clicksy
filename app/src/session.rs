@@ -41,20 +41,32 @@ pub fn enabled(shared: &Shared) -> bool {
     shared.config.load().session.enabled
 }
 
+/// Dossier qui reçoit les sessions : celui de la formation en cours, ou la racine.
+pub fn parent(shared: &Shared) -> PathBuf {
+    let formation = shared.config.load().session.formation.clone();
+    if formation.is_empty() {
+        root(shared)
+    } else {
+        root(shared).join(formation)
+    }
+}
+
 /// Dossier de la session en cours, créé si besoin.
 pub fn dir(shared: &Shared) -> Result<PathBuf, String> {
     let t = unsafe { GetLocalTime() };
     let today = (t.wYear, t.wMonth, t.wDay);
+    let parent = parent(shared);
     let mut cur = CURRENT.lock().unwrap();
     if let Some((d, day)) = cur.as_ref() {
-        if *day == today && d.starts_with(root(shared)) {
-            std::fs::create_dir_all(d).map_err(|e| format!("dossier {} : {e}", d.display()))?;
+        // Même jour et même formation : on continue dans le même dossier.
+        if *day == today && d.parent() == Some(parent.as_path()) {
+            std::fs::create_dir_all(d).map_err(|e| format!("{} : {e}", d.display()))?;
             return Ok(d.clone());
         }
     }
-    let base = root(shared).join(format!("{:04}-{:02}-{:02} {:02}h{:02}", t.wYear, t.wMonth, t.wDay, t.wHour, t.wMinute));
+    let base = parent.join(format!("{:04}-{:02}-{:02} {:02}h{:02}", t.wYear, t.wMonth, t.wDay, t.wHour, t.wMinute));
     let d = unique(&base, "");
-    std::fs::create_dir_all(&d).map_err(|e| format!("dossier {} : {e}", d.display()))?;
+    std::fs::create_dir_all(&d).map_err(|e| format!("{} : {e}", d.display()))?;
     *cur = Some((d.clone(), today));
     Ok(d)
 }
@@ -67,12 +79,32 @@ pub fn current() -> Option<PathBuf> {
 /// Le prochain élément enregistré ouvrira un nouveau dossier.
 pub fn new_session(shared: &Shared) {
     *CURRENT.lock().unwrap() = None;
-    shared.banner("Nouvelle session : les prochains éléments iront dans un nouveau dossier");
+    shared.banner(fx_core::t("Nouvelle session : les prochains éléments iront dans un nouveau dossier"));
 }
 
-/// Ouvre le dossier de la session (ou, s'il n'y en a pas encore, celui des sessions).
+/// Change la formation en cours (vide : aucune) et la place en tête des récentes.
+/// Les éléments suivants iront dans une nouvelle session, dans le dossier de cette formation.
+pub fn set_formation(shared: &Shared, name: &str) {
+    let name = fx_core::folder_name(name);
+    shared.update_config(|c| {
+        c.session.formation = name.clone();
+        if !name.is_empty() {
+            c.session.formations.retain(|f| !f.eq_ignore_ascii_case(&name));
+            c.session.formations.insert(0, name.clone());
+        }
+    });
+    let _ = fx_core::paths::save_config(&shared.data_dir, &shared.config.load_full());
+    *CURRENT.lock().unwrap() = None;
+    shared.banner(if name.is_empty() {
+        fx_core::t("Aucune formation").to_string()
+    } else {
+        fx_core::tf("Formation : {}", &[&name])
+    });
+}
+
+/// Ouvre le dossier de la session (ou, s'il n'y en a pas encore, celui de la formation).
 pub fn open(shared: &Shared) {
-    let d = current().filter(|d| d.exists()).unwrap_or_else(|| root(shared));
+    let d = current().filter(|d| d.exists()).unwrap_or_else(|| parent(shared));
     let _ = std::fs::create_dir_all(&d);
     let _ = std::process::Command::new("explorer.exe").arg(&d).spawn();
 }
@@ -107,7 +139,7 @@ pub fn image_path(shared: &Shared, kind: &str) -> Result<PathBuf, String> {
     }
     let custom = shared.config.load().capture.folder.trim().to_string();
     let d = if custom.is_empty() { known_folder(&FOLDERID_Pictures, "Pictures").join("Clicksy") } else { PathBuf::from(custom) };
-    std::fs::create_dir_all(&d).map_err(|e| format!("dossier {} : {e}", d.display()))?;
+    std::fs::create_dir_all(&d).map_err(|e| format!("{} : {e}", d.display()))?;
     Ok(unique(&d.join(format!("{kind} {}", stamp())), ".png"))
 }
 
@@ -115,10 +147,10 @@ pub fn image_path(shared: &Shared, kind: &str) -> Result<PathBuf, String> {
 pub fn video_place(shared: &Shared) -> Result<(PathBuf, String), String> {
     if enabled(shared) {
         let d = dir(shared)?;
-        let name = unique(&d.join(format!("Vidéo {}", clock())), "");
+        let name = unique(&d.join(format!("{} {}", fx_core::t("Vidéo"), clock())), "");
         return Ok((d, name.file_name().unwrap().to_string_lossy().into_owned()));
     }
     let parent = crate::recorder::videos_dir(shared);
-    let name = unique(&parent.join(format!("Enregistrement {}", stamp())), "");
+    let name = unique(&parent.join(format!("{} {}", fx_core::t("Enregistrement"), stamp())), "");
     Ok((parent, name.file_name().unwrap().to_string_lossy().into_owned()))
 }

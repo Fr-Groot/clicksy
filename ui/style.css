@@ -279,3 +279,15 @@ input[type="color"] {
   .row { flex-wrap: wrap; }
 }
 .btns { display: flex; gap: 8px; flex: none; }
+.text {
+  width: 160px;
+  font: 13px "Segoe UI", sans-serif;
+  padding: 7px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+}
+.text:focus { outline: 2px solid var(--accent); border-color: transparent; }
+.badge { display: inline-block; margin-left: 8px; padding: 1px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; background: #2F7CF6; color: #fff; vertical-align: middle; }
+.btns .btn.small { padding: 5px 9px; font-size: 12px; }

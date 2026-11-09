@@ -16,12 +16,18 @@ const MOCK = {
   capture: { folder: "", copy_to_clipboard: true },
   record: { system_audio: true, mic: true, fps: 30, countdown: true, folder: "", open_folder_after: true, burn_effects: true },
   keys: { enabled: false, all_keys: false, mouse: true, position: "Center", duration_ms: 1600, size: 22 },
-  session: { enabled: true, folder: "" },
+  session: { enabled: true, folder: "", formation: "Excel niveau 1", formations: ["Excel niveau 1", "Teams pour débutants"] },
   hotkeys: { toggle_all: "Ctrl+Alt+Maj+A", cycle_spotlight: "Ctrl+Alt+Maj+S", toggle_ring: "Ctrl+Alt+Maj+R", toggle_clicks: "Ctrl+Alt+Maj+C",
              toggle_draw: "Ctrl+Alt+Maj+D", toggle_laser: "Ctrl+Alt+Maj+L", toggle_trail: "Ctrl+Alt+Maj+T",
              toggle_toolbar: "Ctrl+Alt+Maj+O", cycle_board: "Ctrl+Alt+Maj+W", screenshot: "Ctrl+Alt+Maj+P",
-             toggle_record: "Ctrl+Alt+Maj+E", toggle_keys: "Ctrl+Alt+Maj+K" },
+             toggle_record: "Ctrl+Alt+Maj+E", toggle_keys: "Ctrl+Alt+Maj+K", next_profile: "Ctrl+Alt+Maj+Y" },
+  language: "Auto",
+  active_profile: "Tuto",
 };
+// Champs qu'un profil enregistre (même liste que ProfileSettings côté Rust).
+const PROFILE_FIELDS = ["enabled", "show_banner", "spotlight", "ring", "clicks", "draw", "trail", "laser", "keys", "record"];
+const snapshot = (c) => structuredClone(Object.fromEntries(PROFILE_FIELDS.map((k) => [k, c[k]])));
+MOCK.profiles = ["Tuto", "Classe virtuelle", "Stream", "Démo logiciel"].map((name) => ({ name, settings: snapshot(MOCK) }));
 const api = TAURI
   ? {
       get: () => TAURI.core.invoke("get_config"),
@@ -31,6 +37,8 @@ const api = TAURI
       dataDir: () => TAURI.core.invoke("data_dir"),
       action: (name) => TAURI.core.invoke("run_action", { name }),
       session: () => TAURI.core.invoke("session_info"),
+      setFormation: (name) => TAURI.core.invoke("set_formation", { name }),
+      lang: () => TAURI.core.invoke("ui_language"),
       onChange: (cb) => TAURI.event.listen("config-changed", (e) => cb(e.payload)),
     }
   : {
@@ -40,7 +48,9 @@ const api = TAURI
       openDir: async () => {},
       dataDir: async () => "(aperçu hors application)",
       action: async () => {},
-      session: async () => ["", "C:\Users\…\Documents\Clicksy"],
+      session: async () => ["", "C:\\Users\\…\\Documents\\Clicksy"],
+      setFormation: async (name) => { MOCK.session.formation = name; return structuredClone(MOCK); },
+      lang: async () => (new URLSearchParams(location.search).get("lang") || "fr"),
       onChange: () => {},
     };
 
@@ -76,8 +86,8 @@ function pushSave() {
 function fmt(input, v) {
   if (input.hasAttribute("data-percent")) return Math.round(v * 100) + " %";
   const unit = input.dataset.unit;
-  if (unit === "ms") return (v >= 1000 ? (v / 1000).toFixed(1).replace(".", ",") + " s" : v + " ms");
-  return Number(v).toLocaleString("fr-FR", { maximumFractionDigits: 1 }) + " px";
+  if (unit === "ms") return (v >= 1000 ? (LANG === "en" ? (v / 1000).toFixed(1) : (v / 1000).toFixed(1).replace(".", ",")) + " s" : v + " ms");
+  return Number(v).toLocaleString(LANG === "en" ? "en-GB" : "fr-FR", { maximumFractionDigits: 1 }) + " px";
 }
 
 function render() {
@@ -94,18 +104,18 @@ function render() {
     } else if (el.type === "color") {
       el.value = (v || "#000000").slice(0, 7).toLowerCase();
     } else if (el.classList.contains("hotkey")) {
-      if (!el.classList.contains("capturing")) el.value = v || "Aucun";
+      if (!el.classList.contains("capturing")) el.value = v ? hkLabel(v) : T("Aucun");
     }
   });
   document.querySelectorAll("[data-hk]").forEach((k) => {
     const v = cfg.hotkeys[k.dataset.hk];
-    k.textContent = v || "aucun";
+    k.textContent = v ? hkLabel(v) : T("aucun");
   });
   document.querySelectorAll(".swatches").forEach((box) => {
     const cur = (getPath(cfg, box.dataset.for) || "").toUpperCase();
     box.querySelectorAll("button").forEach((b) => b.classList.toggle("on", b.dataset.color === cur));
   });
-  document.getElementById("master-label").textContent = cfg.enabled ? "Effets activés" : "Effets en pause";
+  document.getElementById("master-label").textContent = T(cfg.enabled ? "Effets activés" : "Effets en pause");
   // Réglages grisés quand l'effet est désactivé.
   dim("#ring .card", cfg.ring.enabled);
   dim("#clicks .card", cfg.clicks.enabled);
@@ -118,6 +128,8 @@ function render() {
   document.getElementById("spot-on").checked = cfg.spotlight.mode !== "Off";
   dimRow("spotlight.radius", shape === "Circle");
   dimRow("spotlight.band_size", shape === "HBand" || shape === "VBand");
+  renderProfiles();
+  renderFormation();
   checkHotkeys();
 }
 
@@ -143,7 +155,9 @@ function bind() {
         // Changer de forme pendant que le spotlight est allumé : la nouvelle forme s'affiche tout de suite.
         if (path === "spotlight.shape" && cfg.spotlight.mode !== "Off") cfg.spotlight.mode = b.dataset.value;
         render();
-        pushSave();
+        // Changement de langue : la fenêtre se recharge pour se traduire.
+        if (path === "language") api.set(cfg, true).then(() => location.reload()).catch(showError);
+        else pushSave();
       });
     } else if (el.type === "checkbox") {
       el.addEventListener("change", () => { setPath(cfg, path, el.checked); render(); pushSave(); });
@@ -182,16 +196,28 @@ function bind() {
   document.getElementById("open-dir").addEventListener("click", () => api.openDir());
   document.getElementById("new-session").addEventListener("click", async () => {
     await api.action("new_session");
-    toast("Nouvelle session : les prochains éléments iront dans un nouveau dossier");
+    toast(T("Nouvelle session : les prochains éléments iront dans un nouveau dossier"));
     setTimeout(showSession, 300);
   });
   document.getElementById("open-session").addEventListener("click", () => api.action("open_session"));
+  const formation = document.getElementById("formation");
+  const setFormation = async () => {
+    cfg = await api.setFormation(formation.value);
+    render();
+    showSession();
+    toast(cfg.session.formation ? T("Formation : {}", cfg.session.formation) : T("Aucune formation"));
+  };
+  document.getElementById("formation-set").addEventListener("click", setFormation);
+  formation.addEventListener("keydown", (e) => { if (e.key === "Enter") setFormation(); });
+  document.getElementById("profile-add").addEventListener("click", addProfile);
+  document.getElementById("profile-name").addEventListener("keydown", (e) => { if (e.key === "Enter") addProfile(); });
   document.getElementById("reset").addEventListener("click", async () => {
-    if (!confirm("Remettre tous les réglages et raccourcis par défaut ?")) return;
-    cfg = await api.defaults();
+    if (!confirm(T("Remettre tous les réglages et raccourcis par défaut ? (Les profils sont conservés.)"))) return;
+    const keep = { profiles: cfg.profiles, active_profile: "", language: cfg.language, session: cfg.session };
+    cfg = Object.assign(await api.defaults(), keep);
     render();
     pushSave();
-    toast("Réglages d'origine restaurés");
+    toast(T("Réglages d'origine restaurés"));
   });
 
   // Navigation entre les pages.
@@ -204,6 +230,107 @@ function bind() {
   go();
 }
 
+// ---------- Profils ----------
+const BUILTIN = ["Tuto", "Classe virtuelle", "Stream", "Démo logiciel"];
+const profileName = (n) => (BUILTIN.includes(n) ? T(n) : n);
+
+function renderProfiles() {
+  const list = document.getElementById("profile-list");
+  list.replaceChildren();
+  cfg.profiles.forEach((p, i) => {
+    const row = document.createElement("div");
+    row.className = "row";
+    const text = document.createElement("div");
+    text.className = "row-text";
+    const name = document.createElement("strong");
+    name.textContent = profileName(p.name);
+    if (p.name === cfg.active_profile) {
+      const b = document.createElement("span");
+      b.className = "badge";
+      b.textContent = T("actif");
+      name.appendChild(b);
+    }
+    const desc = document.createElement("span");
+    desc.textContent = describe(p.settings);
+    text.append(name, desc);
+    const btns = document.createElement("div");
+    btns.className = "btns";
+    const button = (label, title, fn, cls = "") => {
+      const b = document.createElement("button");
+      b.className = "btn small " + cls;
+      b.textContent = T(label);
+      if (title) b.title = T(title);
+      b.addEventListener("click", fn);
+      btns.appendChild(b);
+    };
+    button("Appliquer", "", () => applyProfile(i));
+    button("Mettre à jour", "Remplace les réglages de ce profil par les réglages actuels", () => {
+      cfg.profiles[i].settings = snapshot(cfg);
+      cfg.active_profile = p.name;
+      pushSave();
+      toast(T("Profil « {} » mis à jour", profileName(p.name)));
+    });
+    button("Renommer", "", () => {
+      const n = prompt(T("Nouveau nom du profil"), profileName(p.name));
+      if (!n || !n.trim()) return;
+      if (cfg.active_profile === p.name) cfg.active_profile = n.trim();
+      cfg.profiles[i].name = n.trim();
+      pushSave();
+    });
+    button("Supprimer", "", () => {
+      if (!confirm(T("Supprimer le profil « {} » ?", profileName(p.name)))) return;
+      cfg.profiles.splice(i, 1);
+      pushSave();
+    }, "danger");
+    row.append(text, btns);
+    list.appendChild(row);
+  });
+}
+
+/// Résumé lisible d'un profil : effets allumés.
+function describe(s) {
+  const on = [];
+  if (!s.enabled) return T("Effets en pause");
+  if (s.spotlight.mode !== "Off") on.push(T("spotlight"));
+  if (s.ring.enabled) on.push(T("anneau"));
+  if (s.clicks.enabled) on.push(T(s.clicks.sound ? "clics avec son" : "clics"));
+  if (s.trail.enabled) on.push(T("traînée"));
+  if (s.keys.enabled) on.push(T("touches"));
+  on.push(s.record.fps + " " + T("i/s"));
+  return on.join(" · ");
+}
+
+function applyProfile(i) {
+  const p = cfg.profiles[i];
+  const folder = cfg.record.folder;
+  Object.assign(cfg, structuredClone(p.settings));
+  cfg.record.folder = folder;
+  cfg.active_profile = p.name;
+  render();
+  pushSave();
+  toast(T("Profil : {}", profileName(p.name)));
+}
+
+function addProfile() {
+  const input = document.getElementById("profile-name");
+  const name = input.value.trim();
+  if (!name) { input.focus(); return; }
+  if (cfg.profiles.some((p) => p.name.toLowerCase() === name.toLowerCase())) { toast(T("Ce nom existe déjà")); return; }
+  cfg.profiles.push({ name, settings: snapshot(cfg) });
+  cfg.active_profile = name;
+  input.value = "";
+  pushSave();
+  toast(T("Profil « {} » créé", name));
+}
+
+function renderFormation() {
+  const input = document.getElementById("formation");
+  if (document.activeElement !== input) input.value = cfg.session.formation || "";
+  const dl = document.getElementById("formation-list");
+  dl.replaceChildren(...cfg.session.formations.map((f) => Object.assign(document.createElement("option"), { value: f })));
+  document.querySelectorAll("#formation, #formation-set").forEach((e) => (e.disabled = !cfg.session.enabled));
+}
+
 // ---------- Raccourcis ----------
 function keyName(code) {
   if (code >= 65 && code <= 90) return String.fromCharCode(code);
@@ -214,7 +341,7 @@ function keyName(code) {
 }
 
 function bindHotkey(el, path) {
-  el.addEventListener("focus", () => { el.classList.add("capturing"); el.value = "Appuie sur les touches…"; });
+  el.addEventListener("focus", () => { el.classList.add("capturing"); el.value = T("Appuie sur les touches…"); });
   el.addEventListener("blur", () => { el.classList.remove("capturing"); render(); });
   el.addEventListener("keydown", (e) => {
     e.preventDefault();
@@ -227,13 +354,13 @@ function bindHotkey(el, path) {
       return;
     }
     if ([16, 17, 18, 91, 92].includes(e.keyCode)) {
-      el.value = [e.ctrlKey && "Ctrl", e.altKey && "Alt", e.shiftKey && "Maj", e.metaKey && "Win"].filter(Boolean).join(" + ") + " + …";
+      el.value = [e.ctrlKey && "Ctrl", e.altKey && "Alt", e.shiftKey && T("Maj"), e.metaKey && "Win"].filter(Boolean).join(" + ") + " + …";
       return;
     }
     const key = keyName(e.keyCode);
-    if (!key) { toast("Cette touche n'est pas prise en charge"); return; }
+    if (!key) { toast(T("Cette touche n'est pas prise en charge")); return; }
     const mods = [e.ctrlKey && "Ctrl", e.altKey && "Alt", e.shiftKey && "Maj", e.metaKey && "Win"].filter(Boolean);
-    if (mods.length === 0 && !/^F\d+$/.test(key)) { toast("Ajoute au moins Ctrl, Alt ou Maj"); return; }
+    if (mods.length === 0 && !/^F\d+$/.test(key)) { toast(T("Ajoute au moins Ctrl, Alt ou Maj")); return; }
     setPath(cfg, path, [...mods, key].join("+"));
     el.blur();
     pushSave();
@@ -261,10 +388,10 @@ function checkHotkeys() {
     const v = getPath(cfg, el.dataset.path);
     let bad = false;
     if (v) {
-      if (seen[v]) { msgs.push(`${v} est utilisé deux fois.`); bad = true; }
+      if (seen[v]) { msgs.push(T("{} est utilisé deux fois.", hkLabel(v))); bad = true; }
       seen[v] = true;
-      if (TAKEN[v]) { msgs.push(`${v} est déjà utilisé par ${TAKEN[v]}.`); bad = true; }
-      else if (/^Ctrl\+Alt\+[A-Z0-9]$/.test(v)) { msgs.push(`${v} correspond à AltGr sur un clavier AZERTY : ajoute Maj.`); bad = true; }
+      if (TAKEN[v]) { msgs.push(T("{} est déjà utilisé par {}.", hkLabel(v), T(TAKEN[v]))); bad = true; }
+      else if (/^Ctrl\+Alt\+[A-Z0-9]$/.test(v)) { msgs.push(T("{} correspond à AltGr sur un clavier AZERTY : ajoute Maj.", hkLabel(v))); bad = true; }
     }
     el.classList.toggle("conflict", bad);
   });
@@ -278,7 +405,7 @@ async function showSession() {
   const el = document.getElementById("session-dir");
   el.classList.toggle("mono", !!current);
   el.textContent = current
-    || `Pas encore de dossier : il sera créé dans ${root} au premier élément enregistré.`;
+    || T("Pas encore de dossier : il sera créé dans {} au premier élément enregistré.", root);
 }
 let toastTimer;
 function toast(msg) {
@@ -291,6 +418,8 @@ function toast(msg) {
 function showError(e) { toast(String(e)); }
 
 (async function main() {
+  LANG = await api.lang();
+  translatePage();
   bind();
   cfg = await api.get();
   render();

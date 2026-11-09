@@ -144,6 +144,7 @@ pub struct Shared {
 
 impl Shared {
     pub fn new(config: Config, data_dir: PathBuf) -> Arc<Self> {
+        crate::i18n::apply(config.language);
         Arc::new(Shared {
             config: ArcSwap::from_pointee(config),
             fx: Mutex::new(FxState::default()),
@@ -169,6 +170,7 @@ impl Shared {
         let mut c = (**self.config.load()).clone();
         f(&mut c);
         c.sanitize();
+        crate::i18n::apply(c.language);
         self.config.store(Arc::new(c));
         self.wake();
     }

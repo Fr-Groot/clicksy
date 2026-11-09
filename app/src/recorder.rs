@@ -165,7 +165,7 @@ pub fn go(shared: &Arc<Shared>, target: RecordTarget) {
         Err(e) => {
             shared.modes.recording.store(false, Ordering::Release);
             shared.modes.rec_exclude.store(false, Ordering::Release);
-            shared.banner(format!("Enregistrement impossible : {e}"));
+            shared.banner(fx_core::tf("Enregistrement impossible : {}", &[&e]));
         }
     }
 }
@@ -174,7 +174,7 @@ pub fn stop(shared: &Arc<Shared>) {
     let Some(rec) = RECORDING.lock().unwrap().take() else {
         // Arrêt pendant le compte à rebours : on annule.
         if shared.fx.lock().unwrap().countdown.take().is_some() {
-            shared.banner("Enregistrement annulé");
+            shared.banner(fx_core::t("Enregistrement annulé"));
         }
         return;
     };
@@ -188,7 +188,7 @@ pub fn stop(shared: &Arc<Shared>) {
         shared.modes.rec_exclude.store(false, Ordering::Release);
         match result {
             Ok((dir, warnings)) => {
-                let mut msg = format!("Enregistrement terminé ({}:{:02})", secs / 60, secs % 60);
+                let mut msg = fx_core::tf("Enregistrement terminé ({})", &[&format!("{}:{:02}", secs / 60, secs % 60)]);
                 if let Some(w) = warnings.first() {
                     msg.push_str(&format!(" · {w}"));
                 }
@@ -197,7 +197,7 @@ pub fn stop(shared: &Arc<Shared>) {
                     let _ = std::process::Command::new("explorer.exe").arg(&dir).spawn();
                 }
             }
-            Err(e) => shared.banner(format!("Enregistrement incomplet : {e}")),
+            Err(e) => shared.banner(fx_core::tf("Enregistrement incomplet : {}", &[&e])),
         }
     });
 }
@@ -208,17 +208,17 @@ pub fn pick(shared: &Shared, kind: u8) {
     }
     shared.fx.lock().unwrap().select_rect = None;
     shared.modes.select.store(kind, Ordering::Release);
-    shared.banner(if kind == 1 {
+    shared.banner(fx_core::t(if kind == 1 {
         "Clique sur la fenêtre à enregistrer · Échap annule"
     } else {
         "Trace la zone à enregistrer · Échap annule"
-    });
+    }));
 }
 
 fn cancel_pick(shared: &Shared) {
     shared.modes.select.store(0, Ordering::Release);
     shared.fx.lock().unwrap().select_rect = None;
-    shared.banner("Enregistrement annulé");
+    shared.banner(fx_core::t("Enregistrement annulé"));
 }
 
 /// Événements souris/clavier pendant le choix de la source.
@@ -254,7 +254,7 @@ pub fn on_select_mouse(shared: &Shared, button: MouseButton, x: i32, y: i32, dow
                     return;
                 }
             }
-            shared.banner("Zone trop petite : enregistrement annulé");
+            shared.banner(fx_core::t("Zone trop petite : enregistrement annulé"));
         }
         _ => {}
     }

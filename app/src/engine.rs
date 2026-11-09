@@ -3,7 +3,7 @@
 
 use crossbeam_channel::Receiver;
 use fx_bus::{Action, Event, EventKind, MouseButton};
-use fx_core::{paths, Config, DrawTool, Ripple, Shape, Shared};
+use fx_core::{paths, t, tf, Config, DrawTool, Ripple, Shape, Shared};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 use std::time::Instant;
@@ -82,7 +82,7 @@ pub fn start(shared: Arc<Shared>, rx: Receiver<Event>, on_config_changed: impl F
                             fx.draw.generation += 1;
                             fx.draw.width
                         };
-                        shared.banner(format!("Épaisseur : {w:.0}"));
+                        shared.banner(tf("Épaisseur : {}", &[&format!("{w:.0}")]));
                     }
                     EventKind::MouseDown { button, x, y } => on_mouse(&shared, button, x, y, true),
                     EventKind::MouseUp { button, x, y } => on_mouse(&shared, button, x, y, false),
@@ -177,7 +177,7 @@ fn draw_mouse(shared: &Shared, button: MouseButton, x: i32, y: i32, down: bool, 
             let label = d.tool.label_fr();
             d.generation += 1;
             drop(fx);
-            shared.banner(format!("Outil : {label}"));
+            shared.banner(tf("Outil : {}", &[t(label)]));
             return;
         }
         _ => return,
@@ -237,14 +237,14 @@ fn set_tool(shared: &Shared, tool: DrawTool) {
     }
     with_draw(shared, |d| {
         d.tool = tool;
-        Some(format!("Outil : {}", tool.label_fr()))
+        Some(tf("Outil : {}", &[t(tool.label_fr())]))
     });
 }
 
 fn undo(shared: &Shared) {
     with_draw(shared, |d| {
         d.current = None;
-        d.shapes.pop().map(|_| "Annulé".to_string())
+        d.shapes.pop().map(|_| t("Annulé").to_string())
     });
 }
 
@@ -254,7 +254,7 @@ fn clear(shared: &Shared) {
     with_draw(shared, |d| {
         d.current = None;
         d.shapes.clear();
-        Some(if saved { "Tableau enregistré puis effacé".into() } else { "Dessins effacés".into() })
+        Some(t(if saved { "Tableau enregistré puis effacé" } else { "Dessins effacés" }).into())
     });
 }
 
@@ -275,13 +275,13 @@ fn save_board(shared: &Shared) -> bool {
         return false;
     }
     let pt = POINT { x: m.board_x.load(Ordering::Acquire), y: m.board_y.load(Ordering::Acquire) };
-    match crate::capture::save(shared, pt, "Tableau", false) {
+    match crate::capture::save(shared, pt, t("Tableau"), false) {
         Ok(_) => {
             BOARD_SAVED_GEN.store(generation, Ordering::Release);
             true
         }
         Err(e) => {
-            shared.banner(format!("Image du tableau impossible : {e}"));
+            shared.banner(tf("Image du tableau impossible : {}", &[&e]));
             false
         }
     }
@@ -317,7 +317,7 @@ fn draw_key(shared: &Shared, vk: u32, keys: &Keys) -> bool {
 fn set_color(shared: &Shared, i: usize) {
     with_draw(shared, |d| {
         d.color_index = i.min(2);
-        Some(format!("Couleur {}", d.color_index + 1))
+        Some(tf("Couleur {}", &[&(d.color_index + 1).to_string()]))
     });
 }
 
@@ -347,9 +347,9 @@ fn set_draw_mode(shared: &Shared, on: bool, banner: bool) {
     }
     if banner {
         if on {
-            shared.banner("Mode dessin · 1 2 3 couleurs · P stylo · R cadre · E rond · F flèche · Échap efface");
+            shared.banner(t("Mode dessin · 1 2 3 couleurs · P stylo · R cadre · E rond · F flèche · Échap efface"));
         } else {
-            shared.banner(if saved { "Souris normale · image du tableau enregistrée" } else { "Souris normale" });
+            shared.banner(t(if saved { "Souris normale · image du tableau enregistrée" } else { "Souris normale" }));
         }
     } else {
         shared.wake();
@@ -395,18 +395,18 @@ fn set_board(shared: &Shared, target: u8) {
         });
     }
     m.board.store(next, Ordering::Release);
-    shared.banner(match next {
+    shared.banner(t(match next {
         1 => "Tableau blanc · dessine directement · Échap efface",
         2 => "Tableau noir",
         _ if saved => "Tableau fermé · image enregistrée",
         _ => "Tableau fermé",
-    });
+    }));
 }
 
 // ---------------------------------------------------------------- Actions
 
 fn on_off(b: bool) -> &'static str {
-    if b { "activé" } else { "désactivé" }
+    fx_core::i18n::on_off(b)
 }
 
 /// Applique une action. Renvoie `true` si la configuration ou un mode a changé.
@@ -415,7 +415,7 @@ fn apply(shared: &Arc<Shared>, action: Action) -> bool {
         Action::Quit => return false,
         Action::ReloadConfig => {
             let (cfg, _warn) = paths::load_config(&shared.data_dir);
-            shared.config.store(Arc::new(cfg));
+            shared.update_config(|c| *c = cfg);
             shared.wake();
             return true;
         }
@@ -440,7 +440,7 @@ fn apply(shared: &Arc<Shared>, action: Action) -> bool {
             with_draw(shared, |d| {
                 let next = WIDTHS.iter().copied().find(|w| *w > d.width + 0.5).unwrap_or(WIDTHS[0]);
                 d.width = next;
-                Some(format!("Épaisseur : {next:.0}"))
+                Some(tf("Épaisseur : {}", &[&format!("{next:.0}")]))
             });
             return true;
         }
@@ -494,6 +494,22 @@ fn apply(shared: &Arc<Shared>, action: Action) -> bool {
             let _ = std::process::Command::new("explorer.exe").arg(&dir).spawn();
             return false;
         }
+        Action::ApplyProfile(i) => {
+            apply_profile(shared, i as usize);
+            return true;
+        }
+        Action::NextProfile => {
+            let cfg = shared.config.load();
+            let cur = cfg.profiles.iter().position(|p| p.name == cfg.active_profile);
+            let next = cur.map_or(0, |i| (i + 1) % cfg.profiles.len().max(1));
+            apply_profile(shared, next);
+            return true;
+        }
+        Action::SetFormation(i) => {
+            let name = shared.config.load().session.formations.get(i as usize).cloned().unwrap_or_default();
+            crate::session::set_formation(shared, &name);
+            return true;
+        }
         Action::NewSession => {
             crate::session::new_session(shared);
             return false;
@@ -509,7 +525,7 @@ fn apply(shared: &Arc<Shared>, action: Action) -> bool {
         Action::ToggleLaser => {
             let on = !shared.modes.laser.load(Ordering::Acquire);
             shared.modes.laser.store(on, Ordering::Release);
-            shared.banner(format!("Pointeur laser {}", on_off(on)));
+            shared.banner(tf("Pointeur laser {}", &[on_off(on)]));
             return true;
         }
         ref a => shared.update_config(|c| match a {
@@ -553,15 +569,23 @@ fn apply(shared: &Arc<Shared>, action: Action) -> bool {
 
 fn banner_for(action: &Action, c: &Config) -> Option<String> {
     Some(match action {
-        Action::ToggleAll => if c.enabled { "Clicksy : effets activés".into() } else { "Clicksy : effets en pause".into() },
-        Action::CycleSpotlight | Action::SetSpotlight(_) | Action::ToggleSpotlight => format!("Spotlight : {}", c.spotlight.mode.label_fr().to_lowercase()),
-        Action::ToggleRing => format!("Anneau {}", on_off(c.ring.enabled)),
-        Action::TogglePulse => format!("Pulsation {}", if c.ring.pulse { "activée" } else { "désactivée" }),
-        Action::ToggleClicks => format!("Effets de clic {}", on_off(c.clicks.enabled)),
-        Action::ToggleClickSound => format!("Son de clic {}", on_off(c.clicks.sound)),
-        Action::ToggleTrail => format!("Traînée {}", if c.trail.enabled { "activée" } else { "désactivée" }),
-        Action::ToggleToolbar => format!("Barre d'outils {}", if c.toolbar.visible { "affichée" } else { "masquée" }),
-        Action::ToggleKeys => format!("Affichage des touches {}", on_off(c.keys.enabled)),
+        Action::ToggleAll => t(if c.enabled { "Clicksy : effets activés" } else { "Clicksy : effets en pause" }).into(),
+        Action::CycleSpotlight | Action::SetSpotlight(_) | Action::ToggleSpotlight => tf("Spotlight : {}", &[&t(c.spotlight.mode.label_fr()).to_lowercase()]),
+        Action::ToggleRing => tf("Anneau {}", &[on_off(c.ring.enabled)]),
+        Action::TogglePulse => tf("Pulsation {}", &[t(if c.ring.pulse { "activée" } else { "désactivée" })]),
+        Action::ToggleClicks => tf("Effets de clic {}", &[on_off(c.clicks.enabled)]),
+        Action::ToggleClickSound => tf("Son de clic {}", &[on_off(c.clicks.sound)]),
+        Action::ToggleTrail => tf("Traînée {}", &[t(if c.trail.enabled { "activée" } else { "désactivée" })]),
+        Action::ToggleToolbar => tf("Barre d'outils {}", &[t(if c.toolbar.visible { "affichée" } else { "masquée" })]),
+        Action::ToggleKeys => tf("Affichage des touches {}", &[on_off(c.keys.enabled)]),
         _ => return None,
     })
+}
+
+/// Applique le profil n° `i` et l'enregistre comme profil actif.
+fn apply_profile(shared: &Shared, i: usize) {
+    let Some(p) = shared.config.load().profiles.get(i).cloned() else { return };
+    shared.update_config(|c| c.apply_profile(&p));
+    let _ = paths::save_config(&shared.data_dir, &shared.config.load_full());
+    shared.banner(tf("Profil : {}", &[&crate::profile_name(&p.name)]));
 }
