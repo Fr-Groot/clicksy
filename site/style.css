@@ -116,3 +116,11 @@ h2 { font: 700 clamp(26px, 3.4vw, 36px)/1.2 "Segoe UI Variable Display", "Segoe 
   .btn { width: 100%; text-align: center; }
   .hero-shots .bar { display: none; }
 }
+
+/* Section image à gauche, texte à droite. */
+.split.reverse { grid-template-columns: 0.85fr 1fr; }
+.split .kicker { margin-bottom: 6px; }
+@media (max-width: 960px) {
+  .split.reverse { grid-template-columns: 1fr; }
+  .split.reverse > img { order: 2; }
+}

@@ -3,12 +3,12 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Clicksy – Effets de pointeur et enregistrement d'écran pour formateurs</title>
-  <meta name="description" content="Clicksy est une application Windows gratuite et open source pour formateurs : spotlight, anneau autour du curseur, effets de clic, pointeur laser, dessin à l'écran, tableau blanc et enregistrement vidéo. Sans réseau ni télémétrie.">
+  <title>Clicksy – Effets de pointeur, enregistrement et montage vidéo pour formateurs</title>
+  <meta name="description" content="Clicksy est une application Windows gratuite et open source pour formateurs : spotlight, anneau autour du curseur, effets de clic, touches affichées, dessin à l'écran, enregistrement vidéo avec éditeur (coupes, zooms sur les clics) et guide pas à pas imprimable. Sans réseau ni télémétrie.">
   <link rel="icon" href="images/icon.png">
   <meta property="og:type" content="website">
   <meta property="og:title" content="Clicksy – Effets de pointeur pour formateurs">
-  <meta property="og:description" content="Spotlight, anneau, clics, laser, dessin à l'écran, tableau blanc et enregistrement vidéo. Gratuit, open source, sans réseau ni télémétrie.">
+  <meta property="og:description" content="Spotlight, anneau, clics, touches affichées, dessin, enregistrement vidéo avec éditeur et guide pas à pas. Gratuit, open source, sans réseau ni télémétrie.">
   <meta property="og:image" content="https://fr-groot.github.io/clicksy/images/social-preview.png">
   <meta property="og:url" content="https://fr-groot.github.io/clicksy/">
   <meta name="twitter:card" content="summary_large_image">
@@ -23,6 +23,8 @@
       </a>
       <nav>
         <a href="#fonctions">Fonctions</a>
+        <a href="#editeur">Éditeur</a>
+        <a href="#guide">Guide</a>
         <a href="#entreprise">Entreprise</a>
         <a href="#faq">FAQ</a>
         <a href="https://github.com/Fr-Groot/clicksy">GitHub</a>
@@ -35,7 +37,7 @@
       <div class="hero-text">
         <p class="kicker">Gratuit · open source · Windows 10 et 11</p>
         <h1>Guidez le regard de votre public</h1>
-        <p class="lead">Clicksy met en valeur votre souris, vos clics et vos annotations pendant vos tutos e-learning, vos démos de logiciels et vos classes virtuelles sur Teams, Zoom ou Meet. Et il enregistre l'écran quand vous en avez besoin.</p>
+        <p class="lead">Clicksy met en valeur votre souris, vos clics et vos annotations pendant vos tutos e-learning, vos démos de logiciels et vos classes virtuelles sur Teams, Zoom ou Meet. Il enregistre l'écran, vous aide à monter la vidéo, et transforme vos clics en guide pas à pas pour vos stagiaires.</p>
         <div class="cta">
           <a class="btn primary" id="dl-msi" href="https://github.com/Fr-Groot/clicksy/releases/latest">Télécharger pour Windows</a>
           <a class="btn" id="dl-zip" href="https://github.com/Fr-Groot/clicksy/releases/latest">Version portable (zip)</a>
@@ -48,8 +50,8 @@
         </ul>
       </div>
       <div class="hero-shots">
-        <img class="shot main" src="images/spotlight.png" alt="Spotlight et anneau jaune autour du curseur, sur la fenêtre de réglages de Clicksy" width="862" height="412">
-        <img class="shot bar" src="images/barre-outils.png" alt="Barre d'outils flottante de Clicksy" width="112" height="486">
+        <img class="shot main" src="images/spotlight.png" alt="Spotlight et anneau jaune autour du curseur, sur la fenêtre de réglages de Clicksy" width="1184" height="560">
+        <img class="shot bar" src="images/barre-outils.png" alt="Barre d'outils flottante de Clicksy" width="112" height="536">
       </div>
     </section>
 
@@ -64,8 +66,44 @@
           <article><span class="ico" style="--c:#FF3B30">●</span><h3>Laser et traînée</h3><p>Un point lumineux qui laisse une traînée, comme une télécommande de présentation.</p></article>
           <article><span class="ico" style="--c:#FF3B30">✎</span><h3>Dessin à l'écran</h3><p>Stylo, cadre, rond et flèche, en 3 couleurs. Maj pour des formes parfaites, Ctrl+Z pour annuler, Échap pour effacer.</p></article>
           <article><span class="ico" style="--c:#e6e6e6">▭</span><h3>Tableau blanc ou noir</h3><p>Un écran vierge, en un clic, pour expliquer un schéma. Vos dessins de l'écran vous attendent à la fermeture.</p></article>
-          <article><span class="ico" style="--c:#E52B35">⏺</span><h3>Enregistrement vidéo</h3><p>Écran entier, une fenêtre ou une zone, avec le son du PC et le micro. La souris et les effets apparaissent dans la vidéo.</p></article>
-          <article><span class="ico" style="--c:#2f7cf6">⧉</span><h3>Capture d'écran</h3><p>Une image PNG enregistrée dans Images › Clicksy et copiée dans le presse-papiers, prête à coller dans Word ou Teams.</p></article>
+          <article><span class="ico" style="--c:#7b5cff">⌨</span><h3>Touches affichées</h3><p>Les raccourcis utilisés apparaissent en bas de l'écran : « Ctrl + C », « Maj + Clic gauche ». Jamais le texte d'un mot de passe.</p></article>
+          <article><span class="ico" style="--c:#E52B35">⏺</span><h3>Enregistrement vidéo</h3><p>Écran entier, une fenêtre ou une zone, avec le son du PC et le micro, puis montage dans l'éditeur intégré.</p></article>
+          <article><span class="ico" style="--c:#2ecc71">☰</span><h3>Guide pas à pas</h3><p>Chaque clic devient une étape illustrée et décrite. Le guide s'imprime ou s'enregistre en PDF pour les stagiaires.</p></article>
+          <article><span class="ico" style="--c:#2f7cf6">⧉</span><h3>Capture d'écran</h3><p>Une image PNG copiée dans le presse-papiers, prête à coller dans Word ou Teams, et rangée dans le dossier de la séance.</p></article>
+          <article><span class="ico" style="--c:#FFC400">◐</span><h3>Profils d'utilisation</h3><p>Tuto, classe virtuelle, stream, démo logiciel ou vos propres réglages : un clic pour passer de l'un à l'autre.</p></article>
+          <article><span class="ico" style="--c:#1E90FF">▤</span><h3>Séances bien rangées</h3><p>Captures, tableaux et vidéos d'une séance dans un seul dossier, classé par formation. Interface en français et en anglais.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section id="editeur" class="wrap split">
+      <div>
+        <p class="kicker">Nouveau</p>
+        <h2>Un éditeur vidéo intégré</h2>
+        <p class="sub">Dès la fin de l'enregistrement, la vidéo s'ouvre dans l'éditeur. Quelques minutes suffisent pour une vidéo propre.</p>
+        <ul class="checks">
+          <li><strong>Zooms automatiques sur les clics.</strong> Clicksy se rapproche de l'endroit où vous cliquez, avec des transitions douces. Chaque zoom se déplace, s'allonge ou se règle.</li>
+          <li><strong>Couper sans effort.</strong> Réglez le début et la fin, retirez une hésitation au milieu : la lecture saute déjà les passages coupés.</li>
+          <li><strong>Son maîtrisé.</strong> Volume du son du PC et du micro, pistes enregistrées séparément.</li>
+          <li><strong>Export MP4</strong> en un clic, dans le dossier de la séance. Vos réglages restent enregistrés : rouvrez et réexportez quand vous voulez.</li>
+        </ul>
+      </div>
+      <img class="shot" src="images/editeur.png" alt="Éditeur vidéo de Clicksy : aperçu zoomé, frise avec un passage coupé et quatre zooms sur les clics" width="1484" height="932" loading="lazy">
+    </section>
+
+    <section id="guide" class="band">
+      <div class="wrap split reverse">
+        <img class="shot" src="images/guide.png" alt="Guide pas à pas généré par Clicksy : étapes numérotées avec description et gros plan sur le clic" width="920" height="1045" loading="lazy">
+        <div>
+          <p class="kicker">Nouveau</p>
+          <h2>Un guide pas à pas, sans rien écrire</h2>
+          <p class="sub">Cliquez sur « Guide », faites la manipulation une fois : Clicksy rédige le mode d'emploi pour vos stagiaires.</p>
+          <ul class="checks">
+            <li><strong>Chaque clic devient une étape</strong>, avec un gros plan de l'écran et un repère rouge à l'endroit du clic.</li>
+            <li><strong>Décrite automatiquement</strong> grâce à l'accessibilité de Windows : « Cliquer sur le bouton « Enregistrer » », « Cliquer sur l'onglet « Accueil » ». Les raccourcis deviennent aussi des étapes.</li>
+            <li><strong>Votre texte reste privé.</strong> Ce que vous tapez est signalé (« Saisir le texte voulu ») mais jamais noté.</li>
+            <li><strong>Modifiable et imprimable.</strong> Retouchez les textes dans le navigateur, puis imprimez ou enregistrez en PDF.</li>
+          </ul>
         </div>
       </div>
     </section>
@@ -81,7 +119,7 @@
           <li><strong>Interface en français et en anglais</strong>, profils (tuto, classe virtuelle, stream) appliqués en un clic, réglages appliqués en direct, thème clair ou sombre comme Windows.</li>
         </ul>
       </div>
-      <img class="shot" src="images/reglages.png" alt="Fenêtre de réglages de Clicksy, page Général" width="862" height="412" loading="lazy">
+      <img class="shot" src="images/reglages.png" alt="Fenêtre de réglages de Clicksy, page Profils" width="1184" height="640" loading="lazy">
     </section>
 
     <section id="entreprise" class="band">
@@ -89,12 +127,12 @@
         <h2>Pour votre service informatique</h2>
         <p class="sub">Clicksy a été conçu pour les postes d'entreprise. Voici ce qu'il faut savoir pour l'autoriser.</p>
         <div class="grid two">
-          <article><h3>Aucune donnée ne sort</h3><p>Pas de connexion réseau, pas de télémétrie, pas de mise à jour automatique. Les touches ne sont jamais enregistrées : le clavier ne sert qu'aux raccourcis.</p></article>
+          <article><h3>Aucune donnée ne sort</h3><p>Pas de connexion réseau, pas de télémétrie, pas de mise à jour automatique. Les touches ne sont jamais enregistrées : elles servent aux raccourcis et, si vous l'activez, à l'affichage des touches, oubliées après quelques secondes.</p></article>
           <article><h3>Installation MSI</h3><p>Installation pour tout le PC dans Program Files, déployable par Intune ou SCCM, en mode silencieux : <code>msiexec /i Clicksy_…_x64_fr-FR.msi /qn</code>.</p></article>
           <article><h3>Code source public</h3><p>Le code (Rust, licence MIT) et le workflow de construction GitHub Actions sont publics, avec les sommes SHA256 de chaque fichier publié.</p></article>
           <article><h3>Fichiers non signés pour l'instant</h3><p>Le service informatique peut autoriser le MSI, ou le signer avec l'autorité de certification interne de l'entreprise.</p></article>
         </div>
-        <p class="note">Clicksy surveille la souris et le clavier (hooks Windows) uniquement pour afficher les effets et déclencher ses raccourcis. Il ne lit pas le contenu des fenêtres et ne stocke rien hors de son dossier de réglages, des captures et des vidéos que vous lancez vous-même.</p>
+        <p class="note">Clicksy surveille la souris et le clavier (hooks Windows) uniquement pour afficher les effets et déclencher ses raccourcis. Il ne lit pas le contenu des fenêtres et ne stocke rien hors de son dossier de réglages, des captures, des vidéos et des guides que vous lancez vous-même. Pendant un guide pas à pas, il lit seulement le nom de l'élément cliqué (accessibilité Windows) pour décrire l'étape.</p>
       </div>
     </section>
 
@@ -113,12 +151,20 @@
         <p>Oui, si vous partagez l'écran entier. Si vous ne partagez qu'une seule fenêtre, Teams, Zoom et Meet ne transmettent que cette fenêtre, sans les effets.</p>
       </details>
       <details>
+        <summary>Où sont rangées mes vidéos, captures et guides ?</summary>
+        <p>Dans <code>Documents\Clicksy</code>, un dossier par séance (et par formation si vous en indiquez une). La vidéo finale de l'éditeur est enregistrée à côté de l'enregistrement d'origine.</p>
+      </details>
+      <details>
+        <summary>Le guide pas à pas enregistre-t-il ce que je tape ?</summary>
+        <p>Non. Il note qu'un texte a été saisi (« Saisir le texte voulu »), jamais son contenu. Il décrit les clics avec le nom de l'élément cliqué, et vous pouvez tout retoucher avant d'imprimer.</p>
+      </details>
+      <details>
         <summary>Ça marche avec deux écrans ?</summary>
         <p>Oui. Clicksy crée une surcouche par écran et adapte la taille des effets à l'échelle de chacun (100 %, 150 %…).</p>
       </details>
       <details>
         <summary>Quelles sont les limites ?</summary>
-        <p>Dans une application lancée en administrateur, les clics et raccourcis ne sont pas vus. Les écrans de sécurité (UAC, Ctrl+Alt+Suppr) et les jeux en plein écran exclusif ne peuvent pas afficher d'effets. Les vidéos protégées apparaissent en noir dans un enregistrement.</p>
+        <p>Dans une application lancée en administrateur, les clics et raccourcis ne sont pas vus. Les écrans de sécurité (UAC, Ctrl+Alt+Suppr) et les jeux en plein écran exclusif ne peuvent pas afficher d'effets. Les vidéos protégées apparaissent en noir dans un enregistrement. Sur un très grand écran, l'export de l'éditeur peut prendre un peu plus que la durée de la vidéo.</p>
       </details>
       <details>
         <summary>Combien ça coûte ?</summary>
@@ -129,7 +175,7 @@
     <section class="band en" lang="en">
       <div class="wrap">
         <h2>In English</h2>
-        <p>Clicksy is a free, open-source (MIT) Windows 10/11 app for trainers and presenters: spotlight, cursor ring, click ripples, laser pointer, on-screen drawing, whiteboard, screenshots and screen recording with system audio and microphone. A floating toolbar never steals focus and stays hidden from screen sharing. It can show the shortcuts you press, apply usage profiles (tutorial, virtual class, stream, software demo) in one click, and keep each session's files together, sorted by course. No network access, no telemetry, keystrokes never stored. The interface is in English and French.</p>
+        <p>Clicksy is a free, open-source (MIT) Windows 10/11 app for trainers and presenters: spotlight, cursor ring, click ripples, laser pointer, on-screen drawing, whiteboard, screenshots and screen recording with system audio and microphone. A floating toolbar never steals focus and stays hidden from screen sharing. It can show the shortcuts you press, apply usage profiles (tutorial, virtual class, stream, software demo) in one click, and keep each session's files together, sorted by course. A built-in video editor trims and cuts your recordings and zooms automatically on clicks, and the step-by-step guide turns each click into an illustrated, printable step. No network access, no telemetry, keystrokes never stored. The interface is in English and French.</p>
         <a class="btn primary" href="https://github.com/Fr-Groot/clicksy/releases/latest">Download for Windows</a>
       </div>
     </section>

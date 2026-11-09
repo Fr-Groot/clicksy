@@ -54,7 +54,11 @@ in [Issues](https://github.com/Fr-Groot/clicksy/issues), in English or French.
 
 | Fenêtre de réglages | Barre d'outils |
 |---|---|
-| ![Réglages de Clicksy, page Général](docs/images/reglages.png) | ![Barre d'outils de Clicksy](docs/images/barre-outils.png) |
+| ![Réglages de Clicksy, page Profils](docs/images/reglages.png) | ![Barre d'outils de Clicksy](docs/images/barre-outils.png) |
+
+| Éditeur vidéo | Guide pas à pas |
+|---|---|
+| ![Éditeur vidéo : aperçu zoomé, coupes et zooms sur les clics](docs/images/editeur.png) | ![Guide pas à pas imprimable généré par Clicksy](docs/images/guide.png) |
 
 Tout s'applique en direct : bouger un curseur de réglage modifie l'effet à l'écran pendant le
 glissement. La barre d'outils donne accès au dessin, au tableau, à la capture, au laser, au spotlight
