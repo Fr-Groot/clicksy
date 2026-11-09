@@ -39,7 +39,9 @@ It draws effects on top of the screen to guide the audience's attention:
 - **Screenshots** to PNG and clipboard; global hotkeys; command-line actions for Stream Deck;
 - **Key display** for software tutorials (“Ctrl + C”, “Shift + Left click”), hidden in password fields;
 - **Profiles** (Tutorial, Virtual class, Stream, Software demo, or your own) applied in one click, and
-  **sessions** that keep screenshots, board images and videos together, sorted by course.
+  **sessions** that keep screenshots, board images and videos together, sorted by course;
+- A **video editor** (trim, cut, automatic zoom on clicks, mixed sound, MP4 export) and a **step-by-step
+  guide** that turns each click into an illustrated, printable step (HTML / PDF).
 
 It makes no network connections, has no telemetry and never stores keystrokes. The interface is in
 **French and English** (it follows the Windows language, or choose in Settings › General). Download the MSI installer or portable ZIP from the
@@ -100,6 +102,7 @@ L'icône (un anneau jaune) apparaît dans la zone de notification, à côté de 
 | Ctrl + Alt + Maj + E | Enregistrer l'écran de la souris / arrêter l'enregistrement |
 | Ctrl + Alt + Maj + K | Afficher les touches pressées |
 | Ctrl + Alt + Maj + Y | Profil suivant |
+| Ctrl + Alt + Maj + G | Guide pas à pas : démarrer / terminer |
 
 Tous se modifient dans **Réglages › Raccourcis**. Clicksy signale les doublons, les raccourcis déjà pris
 par Teams, Office ou Windows, et les combinaisons qui correspondent à AltGr sur un clavier AZERTY.
@@ -109,7 +112,7 @@ Une bulle de confirmation (« Spotlight : cercle »…) s'affiche brièvement en
 
 Une barre flottante (bord droit par défaut) donne accès à tout sans raccourci : Souris, Stylo, Cadre,
 Rond, Flèche, épaisseur du trait, 3 couleurs, Annuler, Effacer, tableau Blanc, tableau Noir, Spot, Laser,
-Capture, Touches, Profil, Réglages, et un petit bouton « réduire » dans la poignée. Les réglages (forme du spotlight, couleurs…)
+Capture, Touches, Profil, Guide, Réglages, et un petit bouton « réduire » dans la poignée. Les réglages (forme du spotlight, couleurs…)
 se choisissent dans la fenêtre Réglages ; la barre sert à les appliquer.
 
 - **Ne prend jamais le focus** : cliquer dessus ne fait pas sortir PowerPoint du diaporama.
@@ -192,7 +195,7 @@ affiche le chrono ; un clic dessus arrête. Un cadre rouge entoure ce qui est en
 - **Incrusté** (par défaut) : la vidéo montre ce que tu vois — souris, anneau, clics, dessins, spotlight,
   tableau. Prête à partager. Seuls la barre d'outils et le cadre rouge restent hors de la vidéo.
 - **Éditable** : vidéo filmée *sans* souris ni effets ; le curseur (position, forme) et les clics sont notés
-  à part pour être redessinés, avec les réglages de ton choix, dans l'éditeur (version 0.4).
+  à part, et l'éditeur redessine la souris à l'export.
 
 Dans les deux cas, le journal du curseur est enregistré, et les touches tapées ne le sont jamais.
 
@@ -209,11 +212,40 @@ Chaque enregistrement crée un dossier `Vidéo HH-MM-SS` dans le dossier de la s
 Limites : pas encore de pause ; un contenu protégé (vidéo sous DRM) apparaît en noir ; en mode éditable,
 les effets Clicksy ne sont pas visibles non plus dans un partage Teams simultané.
 
+### Éditeur vidéo
+
+À la fin d'un enregistrement, la vidéo s'ouvre dans l'**éditeur** (désactivable dans Réglages › Enregistrement ;
+aussi dans le menu du bouton Vidéo et **Menu › Éditeur vidéo…**). La liste en haut donne accès à tous les
+enregistrements, rangés par formation et par session.
+
+- **Couper** : les poignées jaunes de la frise règlent le début et la fin ; glisser dans la frise sélectionne un
+  passage, puis « Couper ce passage ». Un passage coupé se rétablit en le sélectionnant.
+- **Zooms** : proposés automatiquement sur les clics (points jaunes de la frise). Un zoom se déplace et
+  s'allonge dans la frise ; on règle son grossissement et son centre (« Placer le centre », puis clic dans l'image).
+  « Zoomer sur ce passage » en ajoute un.
+- **Son** : volume du son du PC et du micro.
+- **Exporter la vidéo** : `Vidéo finale.mp4` dans le dossier de l'enregistrement, avec la zone choisie, les coupes,
+  les zooms (transitions douces), le son mixé et, en mode éditable, la souris redessinée. Les réglages sont
+  gardés dans `edit.json` : on peut rouvrir et réexporter.
+
+Raccourcis de l'éditeur : Espace (lecture), ← → (1 seconde), Suppr (supprimer la sélection).
+
+### Guide pas à pas
+
+Bouton **Guide** de la barre d'outils (ou Ctrl + Alt + Maj + G) : chaque clic devient une **étape illustrée**,
+décrite automatiquement grâce à l'accessibilité de Windows (« Cliquer sur le bouton « Enregistrer » »,
+« Cliquer sur l'onglet « Accueil » »). Les raccourcis deviennent des étapes (« Appuyer sur Ctrl + S ») ;
+le texte tapé est signalé (« Saisir le texte voulu ») **sans jamais être noté**. Les double-clics sont reconnus.
+
+Re-cliquer sur **Guide** termine : la page `Guide.html` s'ouvre dans le navigateur, dans un dossier `Guide HH-MM-SS`
+de la session. Chaque étape montre l'écran en gros plan autour du clic, avec un repère rouge (clic sur l'image :
+écran entier). Les textes sont modifiables avant d'imprimer ou d'**enregistrer en PDF**.
+
 ### Ligne de commande (Stream Deck, scripts)
 
 Avec Clicksy déjà lancé, `clicksy.exe --action <nom>` déclenche une action :
 `tout`, `spotlight`, `anneau`, `clics`, `trainee`, `laser`, `dessin`, `pulsation`, `son`,
-`tableau`, `blanc`, `noir`, `capture`, `barre`, `video`, `touches`, `session` (nouvelle session), `profil` (profil suivant).
+`tableau`, `blanc`, `noir`, `capture`, `barre`, `video`, `touches`, `session` (nouvelle session), `profil` (profil suivant), `editeur`, `guide`.
 Pratique pour un bouton Stream Deck (action « Ouvrir » avec ces arguments).
 
 ## Test manuel
@@ -270,6 +302,16 @@ Pratique pour un bouton Stream Deck (action « Ouvrir » avec ces arguments).
 | 48 | Réglages › Profils : créer « Mon profil », le renommer, le supprimer | La barre et le menu suivent ; supprimer tous les profils fait revenir ceux d'origine |
 | 49 | Réglages › Général › Formation « Excel niveau 1 » › Valider, puis Capture | Fichier dans `Documents\Clicksy\Excel niveau 1\<date heure>\` ; la formation apparaît dans Menu › Formation |
 | 50 | Menu › Formation › Aucune formation, puis Capture | Nouvelle session directement dans `Documents\Clicksy\` |
+| 51 | Enregistrer 20 s en cliquant à plusieurs endroits, arrêter | L'éditeur s'ouvre sur cette vidéo ; des zooms sont proposés sur les clics |
+| 52 | Éditeur : lecture | Les zooms se font en douceur ; le son du PC et le micro suivent l'image |
+| 53 | Éditeur : déplacer les poignées jaunes, sélectionner un passage › Couper ce passage | « Vidéo finale » raccourcit ; la lecture saute le passage |
+| 54 | Éditeur : cliquer un zoom › Grossissement 250 % › Placer le centre › clic dans l'image | Le zoom vise le nouvel endroit |
+| 55 | Éditeur : Exporter la vidéo, puis Lire | `Vidéo finale.mp4` reprend coupes, zooms et son |
+| 56 | Enregistrement en mode éditable (incrustation désactivée), puis export | La souris est redessinée dans `Vidéo finale.mp4` |
+| 57 | Enregistrer une zone, puis exporter | La vidéo finale ne montre que la zone |
+| 58 | Bouton Guide, cliquer 3 boutons d'une appli, Ctrl + S, taper du texte, re-cliquer Guide | Page ouverte dans le navigateur : 3 étapes illustrées avec le nom des boutons, « Appuyer sur Ctrl + S », « Saisir le texte voulu » (sans le texte) |
+| 59 | Guide : modifier un texte, Imprimer ou enregistrer en PDF | PDF propre, sans bouton ni encadré d'aide |
+| 60 | Guide : double-clic sur un fichier | Étape « Double-cliquer sur « … » » |
 
 ## Limites Windows connues
 

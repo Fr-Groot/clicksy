@@ -14,13 +14,13 @@ const MOCK = {
   show_banner: true,
   toolbar: { visible: true, hide_from_capture: true, x: null, y: null },
   capture: { folder: "", copy_to_clipboard: true },
-  record: { system_audio: true, mic: true, fps: 30, countdown: true, folder: "", open_folder_after: true, burn_effects: true },
+  record: { system_audio: true, mic: true, fps: 30, countdown: true, folder: "", open_folder_after: true, burn_effects: true, open_editor_after: true },
   keys: { enabled: false, all_keys: false, mouse: true, position: "Center", duration_ms: 1600, size: 22 },
   session: { enabled: true, folder: "", formation: "Excel niveau 1", formations: ["Excel niveau 1", "Teams pour débutants"] },
   hotkeys: { toggle_all: "Ctrl+Alt+Maj+A", cycle_spotlight: "Ctrl+Alt+Maj+S", toggle_ring: "Ctrl+Alt+Maj+R", toggle_clicks: "Ctrl+Alt+Maj+C",
              toggle_draw: "Ctrl+Alt+Maj+D", toggle_laser: "Ctrl+Alt+Maj+L", toggle_trail: "Ctrl+Alt+Maj+T",
              toggle_toolbar: "Ctrl+Alt+Maj+O", cycle_board: "Ctrl+Alt+Maj+W", screenshot: "Ctrl+Alt+Maj+P",
-             toggle_record: "Ctrl+Alt+Maj+E", toggle_keys: "Ctrl+Alt+Maj+K", next_profile: "Ctrl+Alt+Maj+Y" },
+             toggle_record: "Ctrl+Alt+Maj+E", toggle_keys: "Ctrl+Alt+Maj+K", next_profile: "Ctrl+Alt+Maj+Y", toggle_guide: "Ctrl+Alt+Maj+G" },
   language: "Auto",
   active_profile: "Tuto",
 };
@@ -200,6 +200,7 @@ function bind() {
     setTimeout(showSession, 300);
   });
   document.getElementById("open-session").addEventListener("click", () => api.action("open_session"));
+  document.getElementById("open-editor").addEventListener("click", () => api.action("open_editor"));
   const formation = document.getElementById("formation");
   const setFormation = async () => {
     cfg = await api.setFormation(formation.value);

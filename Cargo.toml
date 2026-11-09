@@ -3,7 +3,7 @@ resolver = "2"
 members = ["app", "crates/*"]
 
 [workspace.package]
-version = "0.5.0"
+version = "0.6.0"
 edition = "2021"
 license = "MIT"
 authors = ["Clicksy contributors"]
@@ -34,6 +34,7 @@ windows = { version = "0.62", features = [
   "Win32_Graphics_Dxgi",
   "Win32_Graphics_Dxgi_Common",
   "Win32_Media_Audio",
+  "Win32_Media_MediaFoundation",
   "Win32_Security",
   "Win32_System_Com",
   "Win32_System_DataExchange",

@@ -88,6 +88,7 @@ pub fn run_action(name: String) -> Result<(), String> {
     let action = match name.as_str() {
         "new_session" => fx_bus::Action::NewSession,
         "open_session" => fx_bus::Action::OpenSessionFolder,
+        "open_editor" => fx_bus::Action::OpenEditor,
         _ => return Err(format!("action inconnue : {name}")),
     };
     fx_bus::action(action);
@@ -113,4 +114,9 @@ pub fn set_formation(shared: State<Arc<Shared>>, name: String) -> Config {
 #[tauri::command]
 pub fn ui_language() -> &'static str {
     fx_core::i18n::code()
+}
+
+/// Poignée de l'application Tauri (pour ouvrir d'autres fenêtres).
+pub fn app() -> Option<AppHandle> {
+    APP.get().cloned()
 }

@@ -57,6 +57,12 @@ pub fn start(shared: Arc<Shared>, rx: Receiver<Event>, on_config_changed: impl F
                         continue;
                     }
                 }
+                // Guide pas à pas : chaque clic (hors dessin) devient une étape.
+                if let EventKind::MouseDown { button, x, y } = ev.kind {
+                    if !drawing && shared.modes.guide.load(Ordering::Relaxed) {
+                        crate::guide::on_click(&shared, button, x, y);
+                    }
+                }
                 match ev.kind {
                     EventKind::KeyDown { vk, injected, .. } | EventKind::KeyUp { vk, injected, .. } if !injected => {
                         let down = matches!(ev.kind, EventKind::KeyDown { .. });
@@ -509,6 +515,14 @@ fn apply(shared: &Arc<Shared>, action: Action) -> bool {
             let name = shared.config.load().session.formations.get(i as usize).cloned().unwrap_or_default();
             crate::session::set_formation(shared, &name);
             return true;
+        }
+        Action::ToggleGuide => {
+            crate::guide::toggle(shared);
+            return true;
+        }
+        Action::OpenEditor => {
+            crate::editor::open(None);
+            return false;
         }
         Action::NewSession => {
             crate::session::new_session(shared);

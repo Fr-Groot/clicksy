@@ -2,7 +2,9 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod capture;
+mod editor;
 mod engine;
+mod guide;
 mod keys;
 mod recorder;
 mod session;
@@ -80,6 +82,13 @@ fn main() {
             settings::session_info,
             settings::set_formation,
             settings::ui_language,
+            editor::editor_projects,
+            editor::editor_load,
+            editor::editor_save,
+            editor::editor_export,
+            editor::editor_cancel,
+            editor::reveal,
+            editor::open_file,
             settings::open_data_dir,
             settings::data_dir,
         ])

@@ -156,7 +156,8 @@ impl Keys {
             self.pw_cache = None;
         }
         let cfg = shared.config.load();
-        if !self.visible(shared, &cfg) {
+        // Ni affichage ni guide pendant le choix de la source d'un enregistrement.
+        if shared.modes.select.load(Ordering::Acquire) != 0 {
             return;
         }
         // Les raccourcis de Clicksy eux-mêmes ne s'affichent pas.
@@ -175,6 +176,19 @@ impl Keys {
         let with_mod = self.ctrl() || self.alt || self.win;
         let combo = with_mod || alone_shown(vk) || (self.shift && !is_char(vk));
         let dur = cfg.keys.duration_ms;
+        // Guide pas à pas : les raccourcis deviennent des étapes, le texte tapé est seulement signalé.
+        if shared.modes.guide.load(Ordering::Relaxed) && !shared.modes.draw.load(Ordering::Relaxed) {
+            if with_mod {
+                let mut parts = self.mods();
+                parts.push(name.clone());
+                crate::guide::on_combo(&parts);
+            } else if is_char(vk) || matches!(vk, 0x08 | 0x2E) {
+                crate::guide::on_typed();
+            }
+        }
+        if !cfg.keys.enabled {
+            return;
+        }
         if combo {
             let mut parts = self.mods();
             parts.push(name);

@@ -41,6 +41,8 @@ const ID_OPEN_SESSION: usize = 43;
 const ID_OPEN_DIR: usize = 40;
 const ID_RELOAD: usize = 41;
 const ID_QUIT: usize = 99;
+const ID_EDITOR: usize = 44;
+const ID_GUIDE: usize = 45;
 const ID_PROFILE: usize = 200;
 const ID_FORMATION: usize = 300;
 const ID_FORMATION_NONE: usize = 399;
@@ -90,7 +92,7 @@ pub fn shutdown() {
 
 /// Actions déclenchables en ligne de commande (`clicksy.exe --action dessin`),
 /// par exemple depuis un Stream Deck ou un script. 0 = ouvrir les réglages.
-pub const CLI_ACTIONS: [(&str, fn() -> Action); 18] = [
+pub const CLI_ACTIONS: [(&str, fn() -> Action); 20] = [
     ("tout", || Action::ToggleAll),
     ("spotlight", || Action::ToggleSpotlight),
     ("anneau", || Action::ToggleRing),
@@ -109,6 +111,8 @@ pub const CLI_ACTIONS: [(&str, fn() -> Action); 18] = [
     ("touches", || Action::ToggleKeys),
     ("session", || Action::NewSession),
     ("profil", || Action::NextProfile),
+    ("editeur", || Action::OpenEditor),
+    ("guide", || Action::ToggleGuide),
 ];
 
 /// Code (1-based) d'une action nommée, pour [`signal_running_instance`].
@@ -344,6 +348,8 @@ unsafe fn show_menu(hwnd: HWND) {
     append(menu, ID_CAPTURE, &hk_label("Capture d'écran", cfg.hotkeys.screenshot), false, true);
     let rec_label = if modes.recording.load(Ordering::Acquire) { "Arrêter l'enregistrement" } else { "Enregistrer l'écran" };
     append(menu, ID_RECORD, &hk_label(rec_label, cfg.hotkeys.toggle_record), modes.recording.load(Ordering::Acquire), true);
+    append(menu, ID_GUIDE, &hk_label("Guide pas à pas", cfg.hotkeys.toggle_guide), modes.guide.load(Ordering::Acquire), true);
+    append(menu, ID_EDITOR, t("Éditeur vidéo…"), false, true);
     append(menu, ID_TOOLBAR, &hk_label("Barre d'outils", cfg.hotkeys.toggle_toolbar), cfg.toolbar.visible, true);
     let _ = AppendMenuW(menu, MF_SEPARATOR, 0, None);
     // Profils et formation : sous-menus.
@@ -417,6 +423,8 @@ unsafe fn show_menu(hwnd: HWND) {
         ID_RECORD => fx_bus::action(Action::ToggleRecord),
         ID_TOOLBAR => fx_bus::action(Action::ToggleToolbar),
         ID_KEYS => fx_bus::action(Action::ToggleKeys),
+        ID_EDITOR => fx_bus::action(Action::OpenEditor),
+        ID_GUIDE => fx_bus::action(Action::ToggleGuide),
         ID_NEW_SESSION => fx_bus::action(Action::NewSession),
         ID_OPEN_SESSION => fx_bus::action(Action::OpenSessionFolder),
         ID_RELOAD => fx_bus::action(Action::ReloadConfig),

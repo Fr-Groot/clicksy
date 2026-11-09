@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Clicksy – Éditeur vidéo</title>
+  <link rel="stylesheet" href="editor.css">
+</head>
+<body>
+  <header class="top">
+    <svg class="logo" viewBox="0 0 32 32" aria-hidden="true">
+      <circle cx="16" cy="16" r="11.5" fill="none" stroke="#FFC400" stroke-width="5"/>
+      <circle cx="16" cy="16" r="4.5" fill="#1E90FF"/>
+    </svg>
+    <select id="project" aria-label="Enregistrement"></select>
+    <span class="spacer"></span>
+    <button class="btn" id="reveal">Ouvrir le dossier</button>
+    <button class="btn primary" id="export">Exporter la vidéo</button>
+  </header>
+
+  <div class="empty" id="empty" hidden>
+    <h2>Aucun enregistrement</h2>
+    <p>Enregistre ton écran avec le bouton « Vidéo » de la barre d'outils : la vidéo s'ouvrira ici.</p>
+  </div>
+
+  <main id="main">
+    <section class="stage-wrap">
+      <div class="stage" id="stage">
+        <div class="viewport" id="viewport">
+          <div class="layer" id="layer">
+            <video id="video" preload="auto" playsinline></video>
+            <canvas id="cursor"></canvas>
+          </div>
+        </div>
+        <div class="pick-hint" id="pick-hint" hidden>Clique dans l'image pour placer le centre du zoom</div>
+      </div>
+      <div class="transport">
+        <button class="icon" id="play" title="Lecture / pause (Espace)">▶</button>
+        <span class="time" id="time">0:00 / 0:00</span>
+        <span class="spacer"></span>
+        <span class="final" id="final"></span>
+      </div>
+    </section>
+
+    <aside class="panel">
+      <div class="group" id="sel-box" hidden>
+        <h2 id="sel-title">Sélection</h2>
+        <p class="hint" id="sel-text"></p>
+        <div class="zoom-ctl" id="zoom-ctl" hidden>
+          <label class="field"><span>Grossissement</span><input type="range" id="zoom-scale" min="1.2" max="3" step="0.1"><output id="zoom-scale-out"></output></label>
+          <button class="btn" id="zoom-pick">Placer le centre</button>
+        </div>
+        <div class="row-btns">
+          <button class="btn" id="sel-cut">Couper ce passage</button>
+          <button class="btn" id="sel-zoom">Zoomer sur ce passage</button>
+          <button class="btn danger" id="sel-remove">Supprimer</button>
+        </div>
+      </div>
+
+      <div class="group">
+        <h2>Zooms</h2>
+        <p class="hint">Proposés automatiquement sur les clics. Clique un zoom dans la frise pour le régler, ou fais glisser dans la frise pour en ajouter un.</p>
+        <div class="row-btns">
+          <button class="btn" id="auto-zooms">Recalculer les zooms</button>
+          <button class="btn" id="clear-zooms">Aucun zoom</button>
+        </div>
+      </div>
+
+      <div class="group">
+        <h2>Son</h2>
+        <label class="field" id="vol-system-row"><span>Son du PC</span><input type="range" id="vol-system" min="0" max="2" step="0.05"><output></output></label>
+        <label class="field" id="vol-mic-row"><span>Micro</span><input type="range" id="vol-mic" min="0" max="2" step="0.05"><output></output></label>
+        <p class="hint" id="no-audio" hidden>Cet enregistrement n'a pas de son.</p>
+      </div>
+
+      <div class="group">
+        <h2>Export</h2>
+        <p class="hint">Vidéo MP4 avec les coupes, les zooms et le son mixé, dans le dossier de l'enregistrement.</p>
+        <div class="progress" id="progress" hidden><div class="bar" id="bar"></div></div>
+        <div class="row-btns">
+          <button class="btn" id="cancel" hidden>Annuler l'export</button>
+        </div>
+        <ul class="exports" id="exports"></ul>
+      </div>
+
+      <p class="keys-help"><kbd>Espace</kbd> lecture · <kbd>←</kbd> <kbd>→</kbd> 1 s · <kbd>Suppr</kbd> supprimer la sélection</p>
+    </aside>
+
+    <section class="timeline-wrap">
+      <div class="timeline" id="timeline">
+        <div class="ruler" id="ruler"></div>
+        <div class="track video-track" id="track-video"><span class="track-label">Vidéo</span></div>
+        <div class="track zoom-track" id="track-zoom"><span class="track-label">Zooms</span></div>
+        <div class="selection" id="selection" hidden></div>
+        <div class="trim trim-in" id="trim-in" title="Début"></div>
+        <div class="trim trim-out" id="trim-out" title="Fin"></div>
+        <div class="playhead" id="playhead"></div>
+      </div>
+      <p class="hint timeline-hint">Fais glisser dans la frise pour sélectionner un passage. Les poignées jaunes règlent le début et la fin.</p>
+    </section>
+  </main>
+
+  <audio id="a-system" preload="auto"></audio>
+  <audio id="a-mic" preload="auto"></audio>
+  <div class="toast" id="toast" role="status" hidden></div>
+  <script src="i18n.js"></script>
+  <script src="i18n-en.js"></script>
+  <script src="editor.js"></script>
+</body>
+</html>

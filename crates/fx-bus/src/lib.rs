@@ -65,6 +65,10 @@ pub enum Action {
     /// Active/désactive une piste son pour les prochains enregistrements (0 PC, 1 micro).
     ToggleRecordAudio(u8),
     OpenVideosFolder,
+    /// Ouvre l'éditeur vidéo (sur le dernier enregistrement).
+    OpenEditor,
+    /// Guide pas à pas : démarrer / terminer.
+    ToggleGuide,
     /// Affichage des touches et combinaisons pressées.
     ToggleKeys,
     /// Démarre une nouvelle session : le prochain élément enregistré ouvre un nouveau dossier.

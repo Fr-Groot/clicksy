@@ -56,6 +56,7 @@ enum Btn {
     Spot,
     Keys,
     Profile,
+    Guide,
     Settings,
     Hide,
 }
@@ -79,6 +80,7 @@ impl Btn {
             Btn::Spot => "Spot",
             Btn::Keys => "Touches",
             Btn::Profile => "Profil",
+            Btn::Guide => "Guide",
             Btn::Settings => "Réglages",
             Btn::Hide => "Masquer",
         })
@@ -104,6 +106,7 @@ impl Btn {
             Btn::Keys => Action::ToggleKeys,
             // Géré à part (menu des profils), voir `profile_click`.
             Btn::Profile => Action::NextProfile,
+            Btn::Guide => Action::ToggleGuide,
             Btn::Settings => Action::OpenSettings,
             Btn::Hide => Action::ToggleToolbar,
         }
@@ -151,8 +154,7 @@ fn layout() -> (Vec<(Hit, D2D_RECT_F)>, Vec<f32>, f32) {
     y += SEP_H;
     pair(&mut items, &mut y, Btn::Record, Btn::Capture);
     pair(&mut items, &mut y, Btn::Keys, Btn::Profile);
-    items.push((Hit::Btn(Btn::Settings), rect(PAD, y, W - PAD, y + BTN_H)));
-    y += BTN_H;
+    pair(&mut items, &mut y, Btn::Guide, Btn::Settings);
     y += PAD;
     (items, seps, y)
 }
@@ -230,6 +232,8 @@ pub struct View {
     /// Durée de l'enregistrement en cours, en secondes.
     pub rec_secs: Option<u64>,
     pub countdown: bool,
+    /// Guide pas à pas en cours.
+    pub guide: bool,
 }
 
 /// Crée, met à jour ou supprime la barre selon la config, puis la redessine si besoin.
@@ -274,7 +278,7 @@ fn signature(tb: &Toolbar, cfg: &Config, v: &View) -> u64 {
     let mut h = std::collections::hash_map::DefaultHasher::new();
     (tb.hover, tb.pressed, tb.scale.to_bits(), v.draw_mode, v.tool as u8, v.color_index, v.width.to_bits()).hash(&mut h);
     (v.laser, v.board, cfg.spotlight.mode as u8, cfg.spotlight.shape as u8).hash(&mut h);
-    (v.recording, v.rec_secs, v.countdown, cfg.keys.enabled, cfg.session.enabled, fx_core::i18n::english()).hash(&mut h);
+    (v.recording, v.rec_secs, v.countdown, cfg.keys.enabled, cfg.session.enabled, fx_core::i18n::english(), v.guide).hash(&mut h);
     for c in &cfg.draw.colors {
         c.to_hex().hash(&mut h);
     }
@@ -419,6 +423,7 @@ fn is_active(b: Btn, cfg: &Config, v: &View) -> bool {
         Btn::Laser => v.laser,
         Btn::Spot => cfg.spotlight.mode != SpotlightMode::Off,
         Btn::Keys => cfg.keys.enabled,
+        Btn::Guide => v.guide,
         _ => false,
     }
 }
@@ -667,6 +672,14 @@ unsafe fn draw_icon(gpu: &Gpu, b: Btn, cx: f32, cy: f32, cfg: &Config, view: &Vi
             line((-2.5, -0.2), (3.0, -4.0), 1.6);
             line((-1.0, -1.2), (3.0, 3.0), 1.6);
         }
+        Btn::Guide => {
+            // Liste numérotée : trois pastilles et trois lignes.
+            for (i, w) in [(-5.0f32, 8.0f32), (0.0, 6.0), (5.0, 7.0)] {
+                let e = D2D1_ELLIPSE { point: v(cx - 6.0, cy + i), radiusX: 1.7, radiusY: 1.7 };
+                dc.FillEllipse(&e, br);
+                line((-2.5, i), (-2.5 + w + 2.0, i), 1.6);
+            }
+        }
         Btn::Profile => {
             // Trois curseurs de réglage empilés : un jeu de réglages.
             let r = D2D1_ROUNDED_RECT {
@@ -894,6 +907,7 @@ unsafe fn record_click(hwnd: HWND) {
     add(5, fx_core::t("Micro"), cfg.record.mic);
     let _ = AppendMenuW(menu, MF_SEPARATOR, 0, None);
     add(6, fx_core::t(if cfg.session.enabled { "Ouvrir le dossier de la session" } else { "Ouvrir le dossier des vidéos" }), false);
+    add(7, fx_core::t("Ouvrir l'éditeur vidéo…"), false);
 
     let mut pt = POINT::default();
     let _ = GetCursorPos(&mut pt);
@@ -909,6 +923,7 @@ unsafe fn record_click(hwnd: HWND) {
         4 => fx_bus::action(Action::ToggleRecordAudio(0)),
         5 => fx_bus::action(Action::ToggleRecordAudio(1)),
         6 => fx_bus::action(Action::OpenVideosFolder),
+        7 => fx_bus::action(Action::OpenEditor),
         _ => {}
     }
 }

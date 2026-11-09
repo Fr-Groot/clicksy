@@ -114,6 +114,8 @@ pub struct Modes {
     pub select: AtomicU8,
     /// Capture d'écran en cours : la surcouche cache bulle, touches et pointeur de dessin.
     pub snapshot: AtomicBool,
+    /// Guide pas à pas en cours d'enregistrement.
+    pub guide: AtomicBool,
 }
 
 impl Modes {

@@ -38,6 +38,13 @@ pub struct Project {
     pub audio: AudioInfo,
     pub events: String,
     pub duration_ms: u64,
+    /// Le curseur de Windows est-il filmé dans la vidéo ? Sinon (mode éditable), il est redessiné à l'export.
+    #[serde(default = "yes")]
+    pub cursor_in_video: bool,
+}
+
+fn yes() -> bool {
+    true
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -60,7 +67,7 @@ pub struct AudioInfo {
 }
 
 impl Project {
-    pub fn new(t0: i64, source: SourceInfo, fps: u32, system: bool, mic: bool) -> Self {
+    pub fn new(t0: i64, source: SourceInfo, fps: u32, system: bool, mic: bool, cursor_in_video: bool) -> Self {
         Project {
             format: 1,
             app: format!("Clicksy {}", env!("CARGO_PKG_VERSION")),
@@ -76,6 +83,7 @@ impl Project {
             },
             events: "events.jsonl".into(),
             duration_ms: 0,
+            cursor_in_video,
         }
     }
 

@@ -56,6 +56,15 @@ pub fn save(shared: &Shared, pt: POINT, kind: &str, clipboard: bool) -> Result<P
     Ok(path)
 }
 
+/// Comme [`grab`], avec le coin haut-gauche de l'écran capturé (pixels du bureau).
+pub(crate) unsafe fn grab_with_origin(pt: POINT) -> Result<(i32, i32, Vec<u8>, [i32; 2]), String> {
+    let mon = MonitorFromPoint(pt, MONITOR_DEFAULTTONEAREST);
+    let mut info = MONITORINFO { cbSize: std::mem::size_of::<MONITORINFO>() as u32, ..Default::default() };
+    let _ = GetMonitorInfoW(mon, &mut info);
+    let (w, h, px) = grab(pt)?;
+    Ok((w, h, px, [info.rcMonitor.left, info.rcMonitor.top]))
+}
+
 /// Copie de l'écran composé (fenêtres + surcouche Clicksy), en BGRA opaque.
 unsafe fn grab(pt: POINT) -> Result<(i32, i32, Vec<u8>), String> {
     let mon = MonitorFromPoint(pt, MONITOR_DEFAULTTONEAREST);
@@ -99,7 +108,7 @@ unsafe fn grab(pt: POINT) -> Result<(i32, i32, Vec<u8>), String> {
     Ok((w, h, pixels))
 }
 
-unsafe fn save_png(path: &Path, w: u32, h: u32, bgra: &[u8]) -> windows::core::Result<()> {
+pub(crate) unsafe fn save_png(path: &Path, w: u32, h: u32, bgra: &[u8]) -> windows::core::Result<()> {
     let _ = CoInitializeEx(None, COINIT_MULTITHREADED);
     let factory: IWICImagingFactory = CoCreateInstance(&CLSID_WICImagingFactory, None, CLSCTX_INPROC_SERVER)?;
     let stream = factory.CreateStream()?;

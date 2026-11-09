@@ -27,7 +27,7 @@ function translatePage() {
   // Conteneurs d'abord (leur traduction contient déjà les <kbd> traduits), puis les éléments isolés.
   const groups = [
     "h1, h2, p, .row-text > strong, .row-text > span, nav a, .label, .keys > div",
-    "button, label > span, kbd:not([data-hk]), strong",
+    "button, label > span, kbd:not([data-hk]), strong, .track-label",
   ];
   for (const sel of groups) {
     document.querySelectorAll(sel).forEach((el) => {

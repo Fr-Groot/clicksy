@@ -1,6 +1,6 @@
 {
   "identifier": "settings",
-  "description": "Fenêtre de réglages : accès aux commandes de Clicksy et aux événements, rien d'autre.",
-  "windows": ["settings"],
+  "description": "Fenêtres de réglages et d'éditeur : accès aux commandes de Clicksy et aux événements, rien d'autre.",
+  "windows": ["settings", "editor"],
   "permissions": ["core:default"]
 }

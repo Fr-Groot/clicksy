@@ -101,3 +101,22 @@ pub fn save(path: &Path, w: u32, h: u32, bgra: &[u8]) -> windows::core::Result<(
         encoder.Commit()
     }
 }
+
+/// Lit une image (PNG…) en BGRA non prémultiplié. Renvoie (largeur, hauteur, pixels).
+pub fn load(path: &Path) -> Option<(u32, u32, Vec<u8>)> {
+    unsafe {
+        let _ = CoInitializeEx(None, COINIT_MULTITHREADED);
+        let factory: IWICImagingFactory = CoCreateInstance(&CLSID_WICImagingFactory, None, CLSCTX_INPROC_SERVER).ok()?;
+        let decoder = factory
+            .CreateDecoderFromFilename(&HSTRING::from(path.as_os_str()), None, windows::Win32::Foundation::GENERIC_READ, WICDecodeMetadataCacheOnDemand)
+            .ok()?;
+        let frame = decoder.GetFrame(0).ok()?;
+        let conv = factory.CreateFormatConverter().ok()?;
+        conv.Initialize(&frame, &GUID_WICPixelFormat32bppBGRA, WICBitmapDitherTypeNone, None, 0.0, WICBitmapPaletteTypeCustom).ok()?;
+        let (mut w, mut h) = (0u32, 0u32);
+        conv.GetSize(&mut w, &mut h).ok()?;
+        let mut buf = vec![0u8; (w * h * 4) as usize];
+        conv.CopyPixels(std::ptr::null(), w * 4, &mut buf).ok()?;
+        Some((w, h, buf))
+    }
+}

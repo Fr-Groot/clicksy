@@ -319,6 +319,7 @@ unsafe fn render_frame(
         recording,
         rec_secs: rec.map(|r| now.saturating_duration_since(r.0).as_secs()),
         countdown: countdown.is_some(),
+        guide: shared.modes.guide.load(Ordering::Acquire),
     };
     presented |= toolbar::sync(gpu, shared, cfg, &view)?;
 

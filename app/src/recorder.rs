@@ -193,7 +193,10 @@ pub fn stop(shared: &Arc<Shared>) {
                     msg.push_str(&format!(" · {w}"));
                 }
                 shared.banner(msg);
-                if shared.config.load().record.open_folder_after {
+                let rc = shared.config.load().record.clone();
+                if rc.open_editor_after {
+                    crate::editor::open(Some(dir.clone()));
+                } else if rc.open_folder_after {
                     let _ = std::process::Command::new("explorer.exe").arg(&dir).spawn();
                 }
             }

@@ -446,6 +446,10 @@
           <div class="row-text"><strong>Profil suivant</strong></div>
           <input class="hotkey" data-path="hotkeys.next_profile" readonly>
         </div>
+        <div class="row">
+          <div class="row-text"><strong>Guide pas à pas</strong></div>
+          <input class="hotkey" data-path="hotkeys.toggle_guide" readonly>
+        </div>
       </div>
       <p class="warn" id="hk-warn" hidden></p>
       <p class="note">Conseil : garde <kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>Maj</kbd>. Sur un clavier AZERTY, <kbd>Ctrl</kbd> + <kbd>Alt</kbd> seul équivaut à <kbd>AltGr</kbd> et peut bloquer des caractères comme @ ou #.</p>
@@ -453,7 +457,7 @@
 
     <section id="record" class="page">
       <h1>Enregistrement</h1>
-      <p class="lead">Capture de l'écran entier, d'une fenêtre ou d'une zone, avec le son du PC et le micro, puis un éditeur (zooms sur les clics, fond, découpe).</p>
+      <p class="lead">Capture de l'écran entier, d'une fenêtre ou d'une zone, avec le son du PC et le micro, puis un éditeur pour couper les passages inutiles et zoomer sur les clics.</p>
       <div class="card help">
         <div class="row">
           <div class="row-text"><strong>Comment enregistrer</strong><span>Bouton <strong>Vidéo</strong> de la barre d'outils (écran entier, fenêtre ou zone), ou <kbd data-hk="toggle_record"></kbd> pour l'écran de la souris. Le même bouton ou raccourci arrête. Par défaut, la souris et les effets sont incrustés dans la vidéo.</span></div>
@@ -461,7 +465,7 @@
       </div>
       <div class="card">
         <div class="row">
-          <div class="row-text"><strong>Incruster la souris et les effets dans la vidéo</strong><span>Activé : la vidéo montre ce que tu vois (souris, anneau, clics, dessins, spotlight…), prête à partager. Désactivé : vidéo « propre », sans souris ni effets, pour les régler après coup dans l'éditeur (prochaine version). La barre d'outils n'apparaît jamais dans la vidéo.</span></div>
+          <div class="row-text"><strong>Incruster la souris et les effets dans la vidéo</strong><span>Activé : la vidéo montre ce que tu vois (souris, anneau, clics, dessins, spotlight…), prête à partager. Désactivé : vidéo « propre », sans effets ; l'éditeur redessine la souris à l'export. La barre d'outils n'apparaît jamais dans la vidéo.</span></div>
           <label class="switch"><input type="checkbox" data-path="record.burn_effects"><span class="track"></span></label>
         </div>
       </div>
@@ -488,6 +492,25 @@
         <div class="row">
           <div class="row-text"><strong>Ouvrir le dossier à la fin</strong><span>Chaque enregistrement crée un dossier « Vidéo » dans le dossier de la session (ou dans Vidéos &rsaquo; Clicksy si les sessions sont désactivées).</span></div>
           <label class="switch"><input type="checkbox" data-path="record.open_folder_after"><span class="track"></span></label>
+        </div>
+      </div>
+
+      <h2>Éditeur vidéo</h2>
+      <div class="card">
+        <div class="row">
+          <div class="row-text"><strong>Ouvrir l'éditeur à la fin</strong><span>L'enregistrement s'ouvre dans l'éditeur : coupe le début, la fin ou des passages, ajuste les zooms proposés sur les clics, règle le son, puis exporte la vidéo finale en MP4.</span></div>
+          <label class="switch"><input type="checkbox" data-path="record.open_editor_after"><span class="track"></span></label>
+        </div>
+        <div class="row">
+          <div class="row-text"><strong>Ouvrir l'éditeur maintenant</strong><span>Aussi dans le menu du bouton « Vidéo » et le menu de l'icône.</span></div>
+          <button class="btn" id="open-editor">Ouvrir</button>
+        </div>
+      </div>
+
+      <h2>Guide pas à pas</h2>
+      <div class="card">
+        <div class="row">
+          <div class="row-text"><strong>Créer un guide pour les stagiaires</strong><span>Bouton « Guide » de la barre d'outils ou <kbd data-hk="toggle_guide"></kbd> : chaque clic devient une étape illustrée (« Cliquer sur le bouton « Enregistrer » »), chaque raccourci aussi. Re-clique sur « Guide » pour terminer : une page s'ouvre dans le navigateur, modifiable et imprimable en PDF. Le texte tapé n'est jamais noté.</span></div>
         </div>
       </div>
     </section>

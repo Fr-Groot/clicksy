@@ -1,6 +1,6 @@
 {
   "productName": "Clicksy",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "identifier": "app.clicksy.desktop",
   "build": {
     "frontendDist": "../ui"
@@ -9,7 +9,11 @@
     "withGlobalTauri": true,
     "windows": [],
     "security": {
-      "csp": "default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src ipc: http://ipc.localhost"
+      "csp": "default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: asset: http://asset.localhost; media-src 'self' asset: http://asset.localhost; connect-src ipc: http://ipc.localhost",
+      "assetProtocol": {
+        "enable": true,
+        "scope": []
+      }
     }
   },
   "bundle": {

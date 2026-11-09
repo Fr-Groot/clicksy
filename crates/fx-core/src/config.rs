@@ -281,11 +281,13 @@ pub struct RecordCfg {
     /// Incruster la souris et les effets Clicksy dans la vidéo (ce que voit le formateur).
     /// Sinon : vidéo « propre », effets à redessiner dans l'éditeur.
     pub burn_effects: bool,
+    /// Ouvrir l'éditeur vidéo à la fin (sinon, le dossier si `open_folder_after`).
+    pub open_editor_after: bool,
 }
 
 impl Default for RecordCfg {
     fn default() -> Self {
-        RecordCfg { system_audio: true, mic: true, fps: 30, countdown: true, folder: String::new(), open_folder_after: true, burn_effects: true }
+        RecordCfg { system_audio: true, mic: true, fps: 30, countdown: true, folder: String::new(), open_folder_after: true, burn_effects: true, open_editor_after: true }
     }
 }
 
@@ -373,11 +375,12 @@ pub struct HotkeysCfg {
     pub toggle_record: Option<Hotkey>,
     pub toggle_keys: Option<Hotkey>,
     pub next_profile: Option<Hotkey>,
+    pub toggle_guide: Option<Hotkey>,
 }
 
 impl HotkeysCfg {
     /// Tous les raccourcis de Clicksy et l'action de chacun.
-    pub fn table(&self) -> [(Option<Hotkey>, fx_bus::Action); 13] {
+    pub fn table(&self) -> [(Option<Hotkey>, fx_bus::Action); 14] {
         use fx_bus::Action;
         [
             (self.toggle_all, Action::ToggleAll),
@@ -393,6 +396,7 @@ impl HotkeysCfg {
             (self.toggle_record, Action::ToggleRecord),
             (self.toggle_keys, Action::ToggleKeys),
             (self.next_profile, Action::NextProfile),
+            (self.toggle_guide, Action::ToggleGuide),
         ]
     }
 }
@@ -512,6 +516,7 @@ impl Default for HotkeysCfg {
             toggle_record: Hotkey::parse("Ctrl+Alt+Maj+E"),
             toggle_keys: Hotkey::parse("Ctrl+Alt+Maj+K"),
             next_profile: Hotkey::parse("Ctrl+Alt+Maj+Y"),
+            toggle_guide: Hotkey::parse("Ctrl+Alt+Maj+G"),
         }
     }
 }

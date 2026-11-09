@@ -13,6 +13,7 @@
 
 mod audio;
 mod clock;
+pub mod export;
 mod journal;
 mod png;
 mod project;
@@ -84,7 +85,7 @@ impl Recording {
             workers.push(("journal", std::thread::spawn(move || journal::record(&d, t0, &src, rx, &s))));
         }
 
-        let project = Project::new(t0, source, opts.fps, opts.system_audio, opts.mic);
+        let project = Project::new(t0, source, opts.fps, opts.system_audio, opts.mic, opts.cursor);
         Ok(Recording { dir, project, stop, video, workers, started: Instant::now() })
     }
 
